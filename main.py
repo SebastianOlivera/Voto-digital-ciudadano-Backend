@@ -42,10 +42,26 @@ class VoteEnableRequest(BaseModel):
     esEspecial: Optional[bool] = False
     cedula_real: Optional[str] = None  # Para votos observados
 
+class EstablecimientoInfo(BaseModel):
+    id: int
+    nombre: str
+    departamento: str
+    ciudad: str
+    zona: Optional[str]
+    barrio: Optional[str]
+    direccion: str
+    tipo_establecimiento: str
+    accesible: bool
+
+class CircuitoInfo(BaseModel):
+    id: int
+    numero_circuito: str
+    establecimiento: EstablecimientoInfo
+
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str
-    circuito: str
+    circuito: Optional[CircuitoInfo]
     username: str
     role: str
 
@@ -93,16 +109,66 @@ async def login(
     db: Session = Depends(database.get_db)
 ):
     user = db.query(models.Usuario).filter(models.Usuario.username == username).first()
-    if not user or not auth.verify_password(password, user.password_hash):
+    print(f"DEBUG: Usuario encontrado: {user is not None}")
+    if user:
+        print(f"DEBUG: Username: {user.username}, Role: {getattr(user, 'role', 'N/A')}")
+        print(f"DEBUG: Password hash starts with: {user.password_hash[:10]}...")
+    
+    if not user:
+        print(f"DEBUG: Usuario '{username}' no encontrado")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas"
         )
+    
+    
+    try:
+        password_valid = auth.verify_password(password, user.password_hash)
+        print(f"DEBUG: Password verification result: {password_valid}")
+    except Exception as e:
+        print(f"DEBUG: Error verifying password: {e}")
+        password_valid = False
+    
+    if not password_valid:
+        print(f"DEBUG: Password verification failed for user: {username}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales incorrectas"
+        )
+    
+    # Obtener información completa del circuito y establecimiento
+    circuito_info = None
+    circuito_id_to_use = user.circuito_id
+    
+    # Para superadmin, usar circuito 1 por defecto
+    if user.role == 'superadmin' and not circuito_id_to_use:
+        circuito_id_to_use = 1
+    
+    if circuito_id_to_use:
+        circuito = db.query(models.Circuito).filter(models.Circuito.id == circuito_id_to_use).first()
+        if circuito and circuito.establecimiento:
+            establecimiento = circuito.establecimiento
+            circuito_info = CircuitoInfo(
+                id=circuito.id,
+                numero_circuito=circuito.numero_circuito,
+                establecimiento=EstablecimientoInfo(
+                    id=establecimiento.id,
+                    nombre=establecimiento.nombre,
+                    departamento=establecimiento.departamento,
+                    ciudad=establecimiento.ciudad,
+                    zona=establecimiento.zona,
+                    barrio=establecimiento.barrio,
+                    direccion=establecimiento.direccion,
+                    tipo_establecimiento=establecimiento.tipo_establecimiento,
+                    accesible=establecimiento.accesible
+                )
+            )
+    
     access_token = auth.create_access_token(data={"sub": user.username})
     return {
         "access_token": access_token, 
         "token_type": "bearer",
-        "circuito": getattr(user, 'circuito', '001'),  # Default al circuito 001
+        "circuito": circuito_info,
         "username": user.username,
         "role": getattr(user, 'role', 'mesa')
     }
@@ -134,7 +200,7 @@ async def enable_vote(
     # Crear nueva autorización
     nueva_auth = models.Autorizacion(
         cedula=cedula_a_autorizar,
-        circuito=request.circuito,
+        circuito_id=int(request.circuito),
         estado='HABILITADA',
         autorizado_por=current_user,
         fecha_autorizacion=datetime.now(),
@@ -155,7 +221,7 @@ async def get_votante(
     """Verificar estado de votante - no requiere auth para cabina"""
     auth_record = db.query(models.Autorizacion).filter(
         models.Autorizacion.cedula == cedula,
-        models.Autorizacion.circuito == circuito
+        models.Autorizacion.circuito_id == int(circuito)
     ).first()
     
     if not auth_record:
@@ -180,7 +246,7 @@ async def votar(
     if not mesa_user:
         raise HTTPException(status_code=403, detail="Usuario de mesa no encontrado")
     
-    circuito_mesa = mesa_user.circuito
+    circuito_id = mesa_user.circuito_id
     
     # Verificar que el votante esté autorizado
     auth_record = db.query(models.Autorizacion).filter(
@@ -207,7 +273,7 @@ async def votar(
         timestamp=datetime.now(),
         es_observado=es_observado,
         estado_validacion=estado_validacion,
-        circuito_mesa=circuito_mesa
+        circuito_id=circuito_id
     )
     db.add(new_vote)
     
@@ -219,47 +285,78 @@ async def votar(
     
     mensaje = "Voto registrado exitosamente"
     if es_observado:
-        mensaje += f" (VOTO OBSERVADO - Circuito credencial: {auth_record.circuito}, Circuito mesa: {circuito_mesa})"
+        mensaje += f" (VOTO OBSERVADO - Circuito credencial: {auth_record.circuito_id}, Circuito mesa: {circuito_id})"
     
     return VotoResponse(mensaje=mensaje)
 
-@app.get("/api/resultados", response_model=ResultadosResponse)
-async def get_resultados(db: Session = Depends(database.get_db)):
+@app.get("/api/resultados")
+async def get_resultados(departamento: Optional[str] = None, db: Session = Depends(database.get_db)):
     """Resultados públicos - no requiere autenticación"""
     from sqlalchemy import func
     
-    # Resultados por candidato
-    resultados = db.query(
+    # Base query
+    query = db.query(
         models.Candidato.nombre.label("candidato"),
         models.Partido.nombre.label("partido"),
         func.count(models.Voto.id).label("votos")
     ).join(models.Voto, models.Candidato.id == models.Voto.candidato_id, isouter=True) \
-     .join(models.Partido, models.Candidato.partido_id == models.Partido.id) \
-     .group_by(models.Candidato.id).all()
+     .join(models.Partido, models.Candidato.partido_id == models.Partido.id)
+    
+    # Filtrar por departamento si se especifica
+    if departamento:
+        query = query.join(models.Circuito, models.Voto.circuito_id == models.Circuito.id) \
+                    .join(models.Establecimiento, models.Circuito.establecimiento_id == models.Establecimiento.id) \
+                    .filter(models.Establecimiento.departamento == departamento)
+    
+    resultados = query.group_by(models.Candidato.id).all()
     
     # Votos en blanco
-    votos_blanco = db.query(func.count(models.Voto.id)).filter(models.Voto.candidato_id.is_(None)).scalar() or 0
+    blanco_query = db.query(func.count(models.Voto.id)).filter(models.Voto.candidato_id.is_(None))
+    if departamento:
+        blanco_query = blanco_query.join(models.Circuito, models.Voto.circuito_id == models.Circuito.id) \
+                                 .join(models.Establecimiento, models.Circuito.establecimiento_id == models.Establecimiento.id) \
+                                 .filter(models.Establecimiento.departamento == departamento)
+    votos_blanco = blanco_query.scalar() or 0
     
     # Total de votos
-    total_votos = db.query(func.count(models.Voto.id)).scalar() or 0
+    total_query = db.query(func.count(models.Voto.id))
+    if departamento:
+        total_query = total_query.join(models.Circuito, models.Voto.circuito_id == models.Circuito.id) \
+                                .join(models.Establecimiento, models.Circuito.establecimiento_id == models.Establecimiento.id) \
+                                .filter(models.Establecimiento.departamento == departamento)
+    total_votos = total_query.scalar() or 0
     
     # Estadísticas adicionales
-    total_votantes = db.query(func.count(models.Autorizacion.id)).scalar() or 0
-    participacion = (total_votos / total_votantes * 100) if total_votantes > 0 else 0
-    votos_observados = 0  # Implementar lógica si necesario
-    mesas_cerradas = 0    # Implementar lógica si necesario  
-    total_mesas = db.query(func.count(models.Usuario.id)).scalar() or 0  # Contar usuarios de mesa
+    auth_query = db.query(func.count(models.Autorizacion.id))
+    if departamento:
+        auth_query = auth_query.join(models.Circuito, models.Autorizacion.circuito_id == models.Circuito.id) \
+                              .join(models.Establecimiento, models.Circuito.establecimiento_id == models.Establecimiento.id) \
+                              .filter(models.Establecimiento.departamento == departamento)
+    total_votantes = auth_query.scalar() or 0
     
-    return ResultadosResponse(
-        resultados=[{"candidato": r.candidato, "partido": r.partido, "votos": r.votos} for r in resultados],
-        votos_blanco=votos_blanco,
-        total_votos=total_votos,
-        total_votantes=total_votantes,
-        participacion=round(participacion, 1),
-        votos_observados=votos_observados,
-        mesas_cerradas=mesas_cerradas,
-        total_mesas=total_mesas
-    )
+    participacion = (total_votos / total_votantes * 100) if total_votantes > 0 else 0
+    votos_observados = 0
+    mesas_cerradas = 0
+    total_mesas = db.query(func.count(models.Usuario.id)).scalar() or 0
+    
+    return {
+        "resultados": [{"candidato": r.candidato, "partido": r.partido, "votos": r.votos} for r in resultados],
+        "votos_blanco": votos_blanco,
+        "total_votos": total_votos,
+        "total_votantes": total_votantes,
+        "participacion": round(participacion, 1),
+        "votos_observados": votos_observados,
+        "mesas_cerradas": mesas_cerradas,
+        "total_mesas": total_mesas,
+        "departamento": departamento
+    }
+
+@app.get("/api/departamentos")
+async def get_departamentos(db: Session = Depends(database.get_db)):
+    """Obtener lista de departamentos disponibles"""
+    from sqlalchemy import func
+    departamentos = db.query(models.Establecimiento.departamento).distinct().all()
+    return [{"nombre": d[0]} for d in departamentos]
 
 # Endpoints adicionales para administración (requieren auth)
 @app.get("/api/votantes/{circuito}")
@@ -270,7 +367,7 @@ async def get_votantes_por_circuito(
 ):
     """Listar votantes por circuito - solo para mesa autenticada"""
     votantes = db.query(models.Autorizacion).filter(
-        models.Autorizacion.circuito == circuito
+        models.Autorizacion.circuito_id == int(circuito)
     ).all()
     return [{"cedula": v.cedula, "estado": v.estado, "fecha_autorizacion": v.fecha_autorizacion} for v in votantes]
 
@@ -293,7 +390,7 @@ async def get_votos_observados(
     votos = db.query(models.Voto).filter(
         models.Voto.es_observado == True,
         models.Voto.estado_validacion == 'pendiente',
-        models.Voto.circuito_mesa == circuito
+        models.Voto.circuito_id == int(circuito)
     ).all()
     
     return [
