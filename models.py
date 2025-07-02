@@ -30,3 +30,14 @@ class Voto(Base):
     candidato_id = Column(Integer, ForeignKey("candidatos.id"), nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
     candidato = relationship("Candidato")
+    
+class Autorizacion(Base):
+    __tablename__ = "autorizaciones"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    cedula = Column(String(20), index=True, nullable=False)  # Agregué longitud 20
+    circuito = Column(String(10), nullable=False)  # Agregué longitud 10
+    estado = Column(String(20), default='HABILITADA')  # Agregué longitud 20
+    autorizado_por = Column(String(50), nullable=True)  # Agregué longitud 50
+    fecha_autorizacion = Column(DateTime, default=datetime.utcnow)
+    fecha_voto = Column(DateTime, nullable=True)
