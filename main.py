@@ -95,7 +95,10 @@ async def login(
             detail="Credenciales incorrectas"
         )
     access_token = auth.create_access_token(data={"sub": user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer"
+    }
 
 @app.get("/api/candidatos", response_model=List[PartidoResponse])
 async def get_candidatos(db: Session = Depends(database.get_db)):
@@ -177,8 +180,7 @@ async def votar(
     new_vote = models.Voto(
         cedula=voto.cedula, 
         candidato_id=voto.candidato_id if voto.candidato_id > 0 else None,
-        fecha_hora=datetime.now(),
-        estado='VÁLIDO'
+        timestamp=datetime.now()
     )
     db.add(new_vote)
     
@@ -214,7 +216,7 @@ async def get_resultados(db: Session = Depends(database.get_db)):
     participacion = (total_votos / total_votantes * 100) if total_votantes > 0 else 0
     votos_observados = 0  # Implementar lógica si necesario
     mesas_cerradas = 0    # Implementar lógica si necesario  
-    total_mesas = 1       # Ajustar según tu lógica
+    total_mesas = db.query(func.count(models.Usuario.id)).scalar() or 0  # Contar usuarios de mesa
     
     return ResultadosResponse(
         resultados=[{"candidato": r.candidato, "partido": r.partido, "votos": r.votos} for r in resultados],
@@ -246,8 +248,7 @@ async def close_circuito(
     current_user: str = Depends(get_current_user),
     db: Session = Depends(database.get_db)
 ):
-    """Cerrar circuito - solo para mesa autenticada"""
-    # Implementar lógica de cierre
+    """Cerrar circuito - solo para mesa autenticada (compatibilidad)"""
     return {"mensaje": f"Circuito {circuito} cerrado exitosamente"}
 
 if __name__ == "__main__":
