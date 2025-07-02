@@ -40,10 +40,14 @@ class VoteEnableRequest(BaseModel):
     credencial: str
     circuito: str
     esEspecial: Optional[bool] = False
+    cedula_real: Optional[str] = None  # Para votos observados
 
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str
+    circuito: str
+    username: str
+    role: str
 
 class VotoResponse(BaseModel):
     mensaje: str
@@ -97,7 +101,10 @@ async def login(
     access_token = auth.create_access_token(data={"sub": user.username})
     return {
         "access_token": access_token, 
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "circuito": getattr(user, 'circuito', '001'),  # Default al circuito 001
+        "username": user.username,
+        "role": getattr(user, 'role', 'mesa')
     }
 
 @app.get("/api/candidatos", response_model=List[PartidoResponse])
@@ -113,9 +120,12 @@ async def enable_vote(
     db: Session = Depends(database.get_db)
 ):
     """Autorizar votante - solo mesa autenticada"""
+    # Para votos observados, usar la cédula real del votante
+    cedula_a_autorizar = request.cedula_real if request.esEspecial and request.cedula_real else request.credencial
+    
     # Verificar si ya está autorizado
     existing_auth = db.query(models.Autorizacion).filter(
-        models.Autorizacion.cedula == request.credencial
+        models.Autorizacion.cedula == cedula_a_autorizar
     ).first()
     
     if existing_auth:
@@ -123,16 +133,18 @@ async def enable_vote(
     
     # Crear nueva autorización
     nueva_auth = models.Autorizacion(
-        cedula=request.credencial,
+        cedula=cedula_a_autorizar,
         circuito=request.circuito,
         estado='HABILITADA',
         autorizado_por=current_user,
-        fecha_autorizacion=datetime.now()
+        fecha_autorizacion=datetime.now(),
+        es_autorizacion_especial=request.esEspecial or False
     )
     db.add(nueva_auth)
     db.commit()
     
-    return {"mensaje": f"Votante {request.credencial} autorizado exitosamente"}
+    tipo_voto = "observado" if request.esEspecial else "normal"
+    return {"mensaje": f"Votante {cedula_a_autorizar} autorizado exitosamente para voto {tipo_voto}"}
 
 @app.get("/api/votante/{circuito}/{cedula}", response_model=VotanteStatus)
 async def get_votante(
@@ -159,9 +171,17 @@ async def get_votante(
 @app.post("/api/votar", response_model=VotoResponse)
 async def votar(
     voto: VotoRequest,
+    current_user: str = Depends(get_current_user),
     db: Session = Depends(database.get_db)
 ):
-    """Votar - no requiere auth individual, se verifica autorización previa"""
+    """Votar - requiere auth de mesa para determinar circuito"""
+    # Obtener información de la mesa que registra el voto
+    mesa_user = db.query(models.Usuario).filter(models.Usuario.username == current_user).first()
+    if not mesa_user:
+        raise HTTPException(status_code=403, detail="Usuario de mesa no encontrado")
+    
+    circuito_mesa = mesa_user.circuito
+    
     # Verificar que el votante esté autorizado
     auth_record = db.query(models.Autorizacion).filter(
         models.Autorizacion.cedula == voto.cedula,
@@ -176,11 +196,18 @@ async def votar(
     if existing_vote:
         raise HTTPException(status_code=400, detail="Esta cédula ya ha votado")
     
+    # Determinar si es voto observado basado en la autorización especial
+    es_observado = getattr(auth_record, 'es_autorizacion_especial', False)
+    estado_validacion = 'pendiente' if es_observado else 'aprobado'
+    
     # Registrar voto
     new_vote = models.Voto(
         cedula=voto.cedula, 
         candidato_id=voto.candidato_id if voto.candidato_id > 0 else None,
-        timestamp=datetime.now()
+        timestamp=datetime.now(),
+        es_observado=es_observado,
+        estado_validacion=estado_validacion,
+        circuito_mesa=circuito_mesa
     )
     db.add(new_vote)
     
@@ -189,7 +216,12 @@ async def votar(
     auth_record.fecha_voto = datetime.now()
     
     db.commit()
-    return VotoResponse(mensaje="Voto registrado exitosamente")
+    
+    mensaje = "Voto registrado exitosamente"
+    if es_observado:
+        mensaje += f" (VOTO OBSERVADO - Circuito credencial: {auth_record.circuito}, Circuito mesa: {circuito_mesa})"
+    
+    return VotoResponse(mensaje=mensaje)
 
 @app.get("/api/resultados", response_model=ResultadosResponse)
 async def get_resultados(db: Session = Depends(database.get_db)):
@@ -250,6 +282,66 @@ async def close_circuito(
 ):
     """Cerrar circuito - solo para mesa autenticada (compatibilidad)"""
     return {"mensaje": f"Circuito {circuito} cerrado exitosamente"}
+
+@app.get("/api/votos-observados/{circuito}")
+async def get_votos_observados(
+    circuito: str,
+    current_user: str = Depends(get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """Obtener votos observados pendientes para el circuito"""
+    votos = db.query(models.Voto).filter(
+        models.Voto.es_observado == True,
+        models.Voto.estado_validacion == 'pendiente',
+        models.Voto.circuito_mesa == circuito
+    ).all()
+    
+    return [
+        {
+            "id": voto.id,
+            "cedula": voto.cedula,
+            "candidato_id": voto.candidato_id,
+            "fecha_hora": voto.timestamp.isoformat()
+        }
+        for voto in votos
+    ]
+
+class ValidarVotoRequest(BaseModel):
+    voto_id: int
+    accion: str  # "validar" o "rechazar"
+
+@app.post("/api/validar-voto-observado")
+async def validar_voto_observado(
+    request: ValidarVotoRequest,
+    current_user: str = Depends(get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """Validar o rechazar voto observado - solo presidente de mesa"""
+    voto = db.query(models.Voto).filter(models.Voto.id == request.voto_id).first()
+    if not voto:
+        raise HTTPException(status_code=404, detail="Voto no encontrado")
+    
+    if request.accion == "validar":
+        voto.estado_validacion = "aprobado"
+    elif request.accion == "rechazar":
+        voto.estado_validacion = "rechazado"
+    else:
+        raise HTTPException(status_code=400, detail="Acción no válida")
+    
+    db.commit()
+    return {"mensaje": f"Voto {request.accion}o exitosamente"}
+
+class CerrarMesaRequest(BaseModel):
+    circuito: str
+
+@app.post("/api/cerrar-mesa")
+async def cerrar_mesa(
+    request: CerrarMesaRequest,
+    current_user: str = Depends(get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """Cerrar mesa - solo presidente de mesa"""
+    return {"mensaje": f"Mesa del circuito {request.circuito} cerrada exitosamente"}
 
 if __name__ == "__main__":
     import uvicorn

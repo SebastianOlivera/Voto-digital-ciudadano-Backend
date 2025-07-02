@@ -9,6 +9,8 @@ class Usuario(Base):
     username = Column(String(50), unique=True, index=True)
     password_hash = Column(String(100))
     is_active = Column(Boolean, default=True)
+    circuito = Column(String(10), nullable=True)  # Agregué el campo circuito
+    role = Column(String(20), default="mesa")     # Agregué el campo role
 
 class Partido(Base):
     __tablename__ = "partidos"
@@ -29,6 +31,9 @@ class Voto(Base):
     cedula = Column(String(20), index=True)
     candidato_id = Column(Integer, ForeignKey("candidatos.id"), nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
+    es_observado = Column(Boolean, default=False)
+    estado_validacion = Column(String(20), default='aprobado')  # 'aprobado', 'pendiente', 'rechazado'
+    circuito_mesa = Column(String(10), nullable=True)  # Circuito donde se emitió el voto
     candidato = relationship("Candidato")
     
 class Autorizacion(Base):
@@ -41,3 +46,4 @@ class Autorizacion(Base):
     autorizado_por = Column(String(50), nullable=True)  # Agregué longitud 50
     fecha_autorizacion = Column(DateTime, default=datetime.utcnow)
     fecha_voto = Column(DateTime, nullable=True)
+    es_autorizacion_especial = Column(Boolean, default=False)  # Para votos observados
