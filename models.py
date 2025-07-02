@@ -57,6 +57,7 @@ class Voto(Base):
     es_observado = Column(Boolean, default=False)
     estado_validacion = Column(String(20), default='aprobado')  # 'aprobado', 'pendiente', 'rechazado'
     circuito_id = Column(Integer, ForeignKey("circuitos.id"), nullable=True)  # Circuito donde se emitió el voto
+    es_anulado = Column(Boolean, default=False)  # Para distinguir votos anulados de votos en blanco
     candidato = relationship("Candidato")
     
 class Autorizacion(Base):

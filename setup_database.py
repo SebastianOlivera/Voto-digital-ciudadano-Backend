@@ -5,10 +5,10 @@ import os
 
 # Configuración de la base de datos
 DATABASE_CONFIG = {
-    'host': 'localhost',
-    'user': 'user',
-    'password': 'password',
-    'database': 'voting_db'
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'user': os.getenv('DB_USER', 'user'),
+    'password': os.getenv('DB_PASSWORD', 'password'),
+    'database': os.getenv('DB_NAME', 'voting_db')
 }
 
 # Para generar hashes de contraseñas
@@ -129,7 +129,7 @@ def create_mock_data():
             ("mesa002", password_hash, True, 2, "mesa"),
             ("mesa003", password_hash, True, 3, "mesa"),
             ("presidente001", password_hash, True, 1, "presidente"),
-            ("admin", password_hash, True, None, "superadmin"),
+            ("admin", password_hash, True, 1, "superadmin"),
         ]
         
         cursor.executemany(
