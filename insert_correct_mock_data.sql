@@ -7,57 +7,90 @@ INSERT INTO establecimientos (nombre, departamento, ciudad, zona, barrio, direcc
 ('Liceo José Pedro Varela', 'Montevideo', 'Montevideo', 'Centro', 'Cordón', '18 de Julio 1234', 'liceo', TRUE),
 ('Universidad de la República', 'Montevideo', 'Montevideo', 'Centro', 'Universidad', 'Av. 18 de Julio 1968', 'universidad', TRUE),
 ('Escuela No. 45', 'Montevideo', 'Montevideo', 'Este', 'Pocitos', 'Av. Brasil 2567', 'escuela', TRUE),
+('Escuela Artigas', 'Montevideo', 'Montevideo', 'Oeste', 'Cerro', 'Carlos María Ramírez 1456', 'escuela', TRUE),
 
 -- Canelones  
 ('Escuela Rural No. 45', 'Canelones', 'Las Piedras', 'Norte', 'Barrio Nuevo', 'Ruta 5 Km 25', 'escuela', FALSE),
 ('Liceo de Canelones', 'Canelones', 'Canelones', 'Centro', 'Centro', 'Treinta y Tres 123', 'liceo', TRUE),
+('Escuela de Pando', 'Canelones', 'Pando', 'Este', 'Centro', 'Leandro Gómez 789', 'escuela', TRUE),
+('Instituto Santa Lucía', 'Canelones', 'Santa Lucía', 'Sur', 'Centro', 'José Batlle y Ordóñez 456', 'instituto', TRUE),
 
 -- Maldonado
 ('Liceo de Punta del Este', 'Maldonado', 'Punta del Este', 'Península', 'Centro', 'Gorlero 456', 'liceo', TRUE),
 ('Instituto Maldonado', 'Maldonado', 'Maldonado', 'Centro', 'Centro', 'Sarandí 234', 'instituto', FALSE),
+('Escuela de San Carlos', 'Maldonado', 'San Carlos', 'Norte', 'Centro', 'Artigas 345', 'escuela', TRUE),
 
 -- Colonia
 ('Escuela de Colonia', 'Colonia', 'Colonia del Sacramento', 'Histórico', 'Barrio Histórico', 'Calle de los Suspiros 12', 'escuela', FALSE),
+('Liceo de Rosario', 'Colonia', 'Rosario', 'Centro', 'Centro', 'General Artigas 567', 'liceo', TRUE),
 
 -- Rocha
-('Liceo de Rocha', 'Rocha', 'Rocha', 'Centro', 'Centro', '19 de Abril 678', 'liceo', TRUE);
+('Liceo de Rocha', 'Rocha', 'Rocha', 'Centro', 'Centro', '19 de Abril 678', 'liceo', TRUE),
+('Escuela de Chuy', 'Rocha', 'Chuy', 'Frontera', 'Centro', 'Av. Brasil 890', 'escuela', FALSE),
+
+-- Rivera
+('Liceo Departamental Rivera', 'Rivera', 'Rivera', 'Centro', 'Centro', 'Sarandí 123', 'liceo', TRUE),
+('Escuela de Tranqueras', 'Rivera', 'Tranqueras', 'Rural', 'Centro', 'Ruta 5 Km 463', 'escuela', FALSE),
+
+-- Salto
+('Liceo José Pedro Varela', 'Salto', 'Salto', 'Centro', 'Centro', 'Uruguay 456', 'liceo', TRUE),
+('Escuela de Constitución', 'Salto', 'Constitución', 'Norte', 'Centro', 'Artigas 789', 'escuela', TRUE),
+
+-- Paysandú
+('Liceo No. 1 Paysandú', 'Paysandú', 'Paysandú', 'Centro', 'Centro', '18 de Julio 234', 'liceo', TRUE),
+('Escuela de Guichón', 'Paysandú', 'Guichón', 'Este', 'Centro', 'General Flores 567', 'escuela', FALSE),
+
+-- Soriano
+('Liceo de Mercedes', 'Soriano', 'Mercedes', 'Centro', 'Centro', 'Giménez 345', 'liceo', TRUE),
+
+-- Tacuarembó
+('Liceo de Tacuarembó', 'Tacuarembó', 'Tacuarembó', 'Centro', 'Centro', 'Wilson Ferreira 678', 'liceo', TRUE);
 
 -- Circuitos con mesas integradas (relación 1:1)
 INSERT INTO circuitos (numero_circuito, numero_mesa, establecimiento_id) VALUES
--- Establecimiento 1: 3 circuitos
-('001', 'A', 1),
-('002', 'B', 1), 
-('003', 'C', 1),
-
--- Establecimiento 2: 2 circuitos
-('004', 'A', 2),
-('005', 'B', 2),
-
--- Establecimiento 3: 1 circuito
+-- Montevideo (establecimientos 1-5)
+('001', 'A', 1), ('002', 'B', 1), ('003', 'C', 1),
+('004', 'A', 2), ('005', 'B', 2),
 ('006', 'A', 3),
+('007', 'A', 4), ('008', 'B', 4),
+('009', 'A', 5),
 
--- Establecimiento 4: 2 circuitos
-('007', 'A', 4),
-('008', 'B', 4),
+-- Canelones (establecimientos 6-9)  
+('016', 'A', 6), ('017', 'B', 6),
+('018', 'A', 7),
+('019', 'A', 8),
+('020', 'A', 9),
 
--- Establecimiento 5: 2 circuitos 
-('016', 'A', 5),
-('017', 'B', 5),
+-- Maldonado (establecimientos 10-12)
+('026', 'A', 10),
+('027', 'A', 11),
+('028', 'A', 12),
 
--- Establecimiento 6: 1 circuito
-('018', 'A', 6),
+-- Colonia (establecimientos 13-14)
+('036', 'A', 13),
+('037', 'A', 14),
 
--- Establecimiento 7: 1 circuito
-('026', 'A', 7),
+-- Rocha (establecimientos 15-16)
+('041', 'A', 15),
+('042', 'A', 16),
 
--- Establecimiento 8: 1 circuito
-('027', 'A', 8),
+-- Rivera (establecimientos 17-18)
+('051', 'A', 17),
+('052', 'A', 18),
 
--- Establecimiento 9: 1 circuito
-('036', 'A', 9),
+-- Salto (establecimientos 19-20)
+('061', 'A', 19),
+('062', 'A', 20),
 
--- Establecimiento 10: 1 circuito
-('041', 'A', 10);
+-- Paysandú (establecimientos 21-22)
+('071', 'A', 21),
+('072', 'A', 22),
+
+-- Soriano (establecimiento 23)
+('081', 'A', 23),
+
+-- Tacuarembó (establecimiento 24)
+('091', 'A', 24);
 
 -- Partidos políticos
 INSERT IGNORE INTO partidos (nombre) VALUES
@@ -103,10 +136,54 @@ INSERT INTO autorizaciones (cedula, circuito_id, estado, autorizado_por, es_auto
 ('55555555', 6, 'VOTÓ', 'presidente006', FALSE),
 ('66666666', 7, 'HABILITADA', 'presidente007', FALSE);
 
--- Votos de ejemplo
+-- Votos de ejemplo distribuidos por departamentos
 INSERT INTO votos (cedula, candidato_id, circuito_id, es_observado, estado_validacion) VALUES
+-- Montevideo
 ('87654321', 1, 1, FALSE, 'aprobado'),
-('22222222', 2, 3, FALSE, 'aprobado'), 
-('55555555', 1, 6, FALSE, 'aprobado'),
 ('77777777', 3, 1, TRUE, 'pendiente'),
-('88888888', 1, 2, FALSE, 'aprobado');
+('88888888', 1, 2, FALSE, 'aprobado'),
+('12341234', 2, 3, FALSE, 'aprobado'),
+('56785678', 1, 4, FALSE, 'aprobado'),
+('91029103', 4, 5, FALSE, 'aprobado'),
+('34563456', 2, 6, FALSE, 'aprobado'),
+('78907890', 3, 7, FALSE, 'aprobado'),
+('23452345', 1, 8, FALSE, 'aprobado'),
+('67896789', 5, 9, FALSE, 'aprobado'),
+
+-- Canelones 
+('22222222', 2, 16, FALSE, 'aprobado'),
+('11112222', 1, 17, FALSE, 'aprobado'),
+('33334444', 3, 18, FALSE, 'aprobado'),
+('55556666', 2, 19, FALSE, 'aprobado'),
+('77778888', 1, 20, FALSE, 'aprobado'),
+
+-- Maldonado
+('55555555', 1, 26, FALSE, 'aprobado'),
+('44445555', 2, 27, FALSE, 'aprobado'),
+('66667777', 3, 28, FALSE, 'aprobado'),
+
+-- Colonia
+('33333333', 4, 36, FALSE, 'aprobado'),
+('22223333', 1, 37, FALSE, 'aprobado'),
+
+-- Rocha
+('66666666', 2, 41, FALSE, 'aprobado'),
+('55556666', 1, 42, FALSE, 'aprobado'),
+
+-- Rivera
+('11111111', 3, 51, FALSE, 'aprobado'),
+('99990000', 2, 52, FALSE, 'aprobado'),
+
+-- Salto
+('88889999', 1, 61, FALSE, 'aprobado'),
+('77778888', 4, 62, FALSE, 'aprobado'),
+
+-- Paysandú
+('66667777', 2, 71, FALSE, 'aprobado'),
+('55554444', 1, 72, FALSE, 'aprobado'),
+
+-- Soriano
+('44443333', 3, 81, FALSE, 'aprobado'),
+
+-- Tacuarembó
+('33332222', 1, 91, FALSE, 'aprobado');

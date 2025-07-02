@@ -84,148 +84,128 @@ def update_database_structure():
             conn.close()
 
 def create_mock_data():
-    """Crea datos mock para testing"""
+    """Crea datos mock directamente en código"""
     try:
         conn = mysql.connector.connect(**DATABASE_CONFIG)
         cursor = conn.cursor()
         
-        print("Creando datos mock...")
+        print("Creando datos mock completos...")
         
-        # 1. Primero crear establecimientos y circuitos
-        print("Creando establecimientos...")
+        # Limpiar tablas en orden correcto (respetando foreign keys)
+        cursor.execute("DELETE FROM votos")
+        cursor.execute("DELETE FROM autorizaciones") 
+        cursor.execute("DELETE FROM usuarios")
+        cursor.execute("DELETE FROM candidatos")
+        cursor.execute("DELETE FROM partidos")
+        cursor.execute("DELETE FROM circuitos")
+        cursor.execute("DELETE FROM establecimientos")
+        print("✓ Tablas limpiadas")
+        
+        # 1. Crear establecimientos
         establecimientos = [
             ('Escuela Nacional No. 1', 'Montevideo', 'Montevideo', 'Centro', 'Ciudad Vieja', 'Sarandí 674', 'escuela', True),
             ('Liceo José Pedro Varela', 'Montevideo', 'Montevideo', 'Centro', 'Cordón', '18 de Julio 1234', 'liceo', True),
             ('Universidad de la República', 'Montevideo', 'Montevideo', 'Centro', 'Universidad', 'Av. 18 de Julio 1968', 'universidad', True),
+            ('Escuela No. 45', 'Montevideo', 'Montevideo', 'Este', 'Pocitos', 'Av. Brasil 2567', 'escuela', True),
+            ('Escuela Artigas', 'Montevideo', 'Montevideo', 'Oeste', 'Cerro', 'Carlos María Ramírez 1456', 'escuela', True),
+            ('Escuela Rural No. 45', 'Canelones', 'Las Piedras', 'Norte', 'Barrio Nuevo', 'Ruta 5 Km 25', 'escuela', False),
+            ('Liceo de Canelones', 'Canelones', 'Canelones', 'Centro', 'Centro', 'Treinta y Tres 123', 'liceo', True),
+            ('Escuela de Pando', 'Canelones', 'Pando', 'Este', 'Centro', 'Leandro Gómez 789', 'escuela', True),
+            ('Instituto Santa Lucía', 'Canelones', 'Santa Lucía', 'Sur', 'Centro', 'José Batlle y Ordóñez 456', 'instituto', True),
+            ('Liceo de Punta del Este', 'Maldonado', 'Punta del Este', 'Península', 'Centro', 'Gorlero 456', 'liceo', True),
+            ('Instituto Maldonado', 'Maldonado', 'Maldonado', 'Centro', 'Centro', 'Sarandí 234', 'instituto', False),
+            ('Escuela de San Carlos', 'Maldonado', 'San Carlos', 'Norte', 'Centro', 'Artigas 345', 'escuela', True),
+            ('Escuela de Colonia', 'Colonia', 'Colonia del Sacramento', 'Histórico', 'Barrio Histórico', 'Calle de los Suspiros 12', 'escuela', False),
+            ('Liceo de Rosario', 'Colonia', 'Rosario', 'Centro', 'Centro', 'General Artigas 567', 'liceo', True),
+            ('Liceo de Rocha', 'Rocha', 'Rocha', 'Centro', 'Centro', '19 de Abril 678', 'liceo', True),
+            ('Escuela de Chuy', 'Rocha', 'Chuy', 'Frontera', 'Centro', 'Av. Brasil 890', 'escuela', False),
+            ('Liceo Departamental Rivera', 'Rivera', 'Rivera', 'Centro', 'Centro', 'Sarandí 123', 'liceo', True),
+            ('Escuela de Tranqueras', 'Rivera', 'Tranqueras', 'Rural', 'Centro', 'Ruta 5 Km 463', 'escuela', False),
+            ('Liceo José Pedro Varela', 'Salto', 'Salto', 'Centro', 'Centro', 'Uruguay 456', 'liceo', True),
+            ('Escuela de Constitución', 'Salto', 'Constitución', 'Norte', 'Centro', 'Artigas 789', 'escuela', True),
+            ('Liceo No. 1 Paysandú', 'Paysandú', 'Paysandú', 'Centro', 'Centro', '18 de Julio 234', 'liceo', True),
+            ('Escuela de Guichón', 'Paysandú', 'Guichón', 'Este', 'Centro', 'General Flores 567', 'escuela', False),
+            ('Liceo de Mercedes', 'Soriano', 'Mercedes', 'Centro', 'Centro', 'Giménez 345', 'liceo', True),
+            ('Liceo de Tacuarembó', 'Tacuarembó', 'Tacuarembó', 'Centro', 'Centro', 'Wilson Ferreira 678', 'liceo', True),
         ]
         
         cursor.executemany(
-            "INSERT IGNORE INTO establecimientos (nombre, departamento, ciudad, zona, barrio, direccion, tipo_establecimiento, accesible) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+            "INSERT INTO establecimientos (nombre, departamento, ciudad, zona, barrio, direccion, tipo_establecimiento, accesible) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
             establecimientos
         )
+        print("✓ Establecimientos creados")
         
-        print("Creando circuitos...")
+        # 2. Crear circuitos
         circuitos = [
-            ('001', 'A', 1),
-            ('002', 'B', 1), 
-            ('003', 'C', 1),
+            ('001', 'A', 1), ('002', 'B', 1), ('003', 'C', 1),
+            ('004', 'A', 2), ('005', 'B', 2), ('006', 'A', 3),
+            ('007', 'A', 4), ('008', 'B', 4), ('009', 'A', 5),
+            ('016', 'A', 6), ('017', 'B', 6), ('018', 'A', 7),
+            ('019', 'A', 8), ('020', 'A', 9), ('026', 'A', 10),
+            ('027', 'A', 11), ('028', 'A', 12), ('036', 'A', 13),
+            ('037', 'A', 14), ('041', 'A', 15), ('042', 'A', 16),
+            ('051', 'A', 17), ('052', 'A', 18), ('061', 'A', 19),
+            ('062', 'A', 20), ('071', 'A', 21), ('072', 'A', 22),
+            ('081', 'A', 23), ('091', 'A', 24),
         ]
         
         cursor.executemany(
-            "INSERT IGNORE INTO circuitos (numero_circuito, numero_mesa, establecimiento_id) VALUES (%s, %s, %s)",
+            "INSERT INTO circuitos (numero_circuito, numero_mesa, establecimiento_id) VALUES (%s, %s, %s)",
             circuitos
         )
+        print("✓ Circuitos creados")
         
-        # 2. Limpiar usuarios existentes y crear nuevos
-        cursor.execute("DELETE FROM usuarios")
-        print("✓ Usuarios anteriores eliminados")
+        # 3. Crear partidos
+        partidos = [
+            ('Frente Amplio',), ('Partido Nacional',), ('Partido Colorado',), ('Cabildo Abierto',), ('Partido Independiente',)
+        ]
+        cursor.executemany("INSERT INTO partidos (nombre) VALUES (%s)", partidos)
+        print("✓ Partidos creados")
         
-        # Hash real para "password123"
+        # 4. Crear candidatos
+        candidatos = [
+            ('Yamandú Orsi', 1), ('Álvaro Delgado', 2), ('Andrés Ojeda', 3), 
+            ('Guido Manini Ríos', 4), ('Pablo Mieres', 5)
+        ]
+        cursor.executemany("INSERT INTO candidatos (nombre, partido_id) VALUES (%s, %s)", candidatos)
+        print("✓ Candidatos creados")
+        
+        # 5. Crear usuarios con hash correcto
         password_hash = pwd_context.hash("password123")
-        
-        # 3. Usuarios de mesa con circuitos asignados (usar circuito_id)
-        usuarios_mesa = [
+        usuarios = [
             ("mesa001", password_hash, True, 1, "mesa"),
             ("mesa002", password_hash, True, 2, "mesa"),
             ("mesa003", password_hash, True, 3, "mesa"),
             ("presidente001", password_hash, True, 1, "presidente"),
-            ("admin", password_hash, True, 1, "superadmin"),
-        ]
-        
-        # Insertar usuarios uno por uno para mejor debugging
-        for usuario_data in usuarios_mesa:
-            try:
-                cursor.execute(
-                    "INSERT INTO usuarios (username, password_hash, is_active, circuito_id, role) VALUES (%s, %s, %s, %s, %s)",
-                    usuario_data
-                )
-                print(f"✓ Usuario {usuario_data[0]} creado exitosamente")
-            except mysql.connector.Error as e:
-                print(f"❌ Error creando usuario {usuario_data[0]}: {e}")
-        
-        print("✓ Proceso de creación de usuarios completado")
-        
-        # 4. Partidos políticos
-        partidos = [
-            ("Frente Amplio", ),
-            ("Partido Nacional", ),
-            ("Partido Colorado", ),
-            ("Cabildo Abierto", ),
-            ("Partido Independiente", ),
+            ("presidente002", password_hash, True, 2, "presidente"),
+            ("presidente003", password_hash, True, 3, "presidente"),
+            ("admin", password_hash, True, None, "superadmin"),
         ]
         
         cursor.executemany(
-            "INSERT IGNORE INTO partidos (nombre) VALUES (%s)",
-            partidos
+            "INSERT INTO usuarios (username, password_hash, is_active, circuito_id, role) VALUES (%s, %s, %s, %s, %s)",
+            usuarios
         )
-        print("✓ Partidos políticos creados")
+        print("✓ Usuarios creados")
         
-        # 5. Candidatos para elecciones generales (1 por partido)
-        candidatos = [
-            ("Yamandú Orsi", 1),           # Frente Amplio
-            ("Álvaro Delgado", 2),         # Partido Nacional  
-            ("Andrés Ojeda", 3),           # Partido Colorado
-            ("Guido Manini Ríos", 4),     # Cabildo Abierto
-            ("Pablo Mieres", 5),           # Partido Independiente
+        # 6. Crear votos de ejemplo
+        votos = [
+            ('87654321', 1, 1, False, 'aprobado'),
+            ('88888888', 1, 2, False, 'aprobado'),
+            ('12341234', 2, 3, False, 'aprobado'),
+            ('22222222', 2, 16, False, 'aprobado'),
+            ('11112222', 1, 17, False, 'aprobado'),
+            ('33334444', 3, 18, False, 'aprobado'),
+            ('55555555', 1, 26, False, 'aprobado'),
+            ('44445555', 2, 27, False, 'aprobado'),
+            ('66667777', 3, 28, False, 'aprobado'),
         ]
         
         cursor.executemany(
-            "INSERT IGNORE INTO candidatos (nombre, partido_id) VALUES (%s, %s)",
-            candidatos
+            "INSERT INTO votos (cedula, candidato_id, circuito_id, es_observado, estado_validacion) VALUES (%s, %s, %s, %s, %s)",
+            votos
         )
-        print("✓ Candidatos creados")
-        
-        # 6. Autorizaciones de 200 votantes habilitados
-        autorizaciones = []
-        cedulas_votantes = []
-        
-        # Generar 200 cédulas únicas
-        for i in range(200):
-            cedula = f"1{str(i+1).zfill(7)}"  # Cédulas del 1000001 al 1000200
-            circuito_id = (i % 3) + 1  # Distribuir entre circuitos 1, 2, 3
-            mesa_usuario = f"mesa00{circuito_id}"
-            
-            autorizaciones.append((cedula, circuito_id, "HABILITADA", mesa_usuario, datetime.now(), None))
-            cedulas_votantes.append(cedula)
-        
-        cursor.executemany(
-            "INSERT IGNORE INTO autorizaciones (cedula, circuito_id, estado, autorizado_por, fecha_autorizacion, fecha_voto) VALUES (%s, %s, %s, %s, %s, %s)",
-            autorizaciones
-        )
-        print("✓ 200 autorizaciones de votantes creadas")
-        
-        # 7. Votos reales de los 200 votantes autorizados
-        votos_mock = []
-        
-        # Distribución de votos: 
-        # Yamandú Orsi (id=1): 70 votos (35%)
-        # Álvaro Delgado (id=2): 60 votos (30%)
-        # Andrés Ojeda (id=3): 35 votos (17.5%)
-        # Guido Manini Ríos (id=4): 20 votos (10%)
-        # Pablo Mieres (id=5): 15 votos (7.5%)
-        
-        for i, cedula in enumerate(cedulas_votantes):
-            circuito_id = (i % 3) + 1
-            
-            # Distribución de candidatos
-            if i < 70:
-                candidato_id = 1  # Yamandú Orsi
-            elif i < 130:
-                candidato_id = 2  # Álvaro Delgado
-            elif i < 165:
-                candidato_id = 3  # Andrés Ojeda
-            elif i < 185:
-                candidato_id = 4  # Guido Manini Ríos
-            else:
-                candidato_id = 5  # Pablo Mieres
-            
-            votos_mock.append((cedula, candidato_id, datetime.now(), circuito_id))
-        
-        cursor.executemany(
-            "INSERT IGNORE INTO votos (cedula, candidato_id, timestamp, circuito_id) VALUES (%s, %s, %s, %s)",
-            votos_mock
-        )
-        print("✓ 200 votos reales creados")
+        print("✓ Votos de ejemplo creados")
         
         conn.commit()
         print("🎉 Datos mock creados exitosamente!")
