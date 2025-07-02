@@ -132,11 +132,18 @@ def create_mock_data():
             ("admin", password_hash, True, 1, "superadmin"),
         ]
         
-        cursor.executemany(
-            "INSERT INTO usuarios (username, password_hash, is_active, circuito_id, role) VALUES (%s, %s, %s, %s, %s)",
-            usuarios_mesa
-        )
-        print("✓ Usuarios de mesa creados")
+        # Insertar usuarios uno por uno para mejor debugging
+        for usuario_data in usuarios_mesa:
+            try:
+                cursor.execute(
+                    "INSERT INTO usuarios (username, password_hash, is_active, circuito_id, role) VALUES (%s, %s, %s, %s, %s)",
+                    usuario_data
+                )
+                print(f"✓ Usuario {usuario_data[0]} creado exitosamente")
+            except mysql.connector.Error as e:
+                print(f"❌ Error creando usuario {usuario_data[0]}: {e}")
+        
+        print("✓ Proceso de creación de usuarios completado")
         
         # 4. Partidos políticos
         partidos = [
