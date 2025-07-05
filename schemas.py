@@ -35,16 +35,17 @@ class CandidatoResponse(BaseModel):
 class PartidoResponse(BaseModel):
     partido: str
     candidatos: List[CandidatoResponse]
+    color: Optional[str] = None
 
 # Esquemas de request
 class VoteEnableRequest(BaseModel):
     credencial: str
     circuito: str  # Agregar el campo circuito que faltaba
-    cedula_real: Optional[str] = None
+    credencial_civica: Optional[str] = None
     esEspecial: bool = False
 
 class VotanteStatus(BaseModel):
-    cedula: str
+    credencial: str
     estado: str
     circuito_id: Optional[int] = None
     fecha_autorizacion: Optional[datetime] = None
@@ -52,7 +53,7 @@ class VotanteStatus(BaseModel):
     es_autorizacion_especial: Optional[bool] = False
 
 class VotoRequest(BaseModel):
-    cedula: str
+    credencial: str
     candidato_id: int  # -1 = anulado, 0 = blanco, >0 = candidato
 
 class VotoResponse(BaseModel):
@@ -90,7 +91,11 @@ class CreateListaRequest(BaseModel):
     candidato: str
     vicepresidente: str
     numero_lista: int
-    partido: str
+    partido_id: int
+
+class CreatePartidoRequest(BaseModel):
+    nombre: str
+    color: str  # Formato hex como #FF0000
 
 class CreateCircuitoRequest(BaseModel):
     numero_circuito: str
@@ -103,6 +108,12 @@ class UsuarioCreatedResponse(BaseModel):
     username: str
     circuito_id: int
     role: str
+    mensaje: str
+
+class PartidoCreatedResponse(BaseModel):
+    id: int
+    nombre: str
+    color: str
     mensaje: str
 
 class EstablecimientoCreatedResponse(BaseModel):

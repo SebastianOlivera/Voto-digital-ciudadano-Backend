@@ -1,6 +1,7 @@
-from database import get_db_connection
+from database import get_db_connection, get_db_transaction
 from dao.admin_dao import AdminDAO
-from schemas import CreateUsuarioRequest, CreateEstablecimientoRequest, CreateEleccionRequest, CreateCircuitoRequest
+from schemas import CreateUsuarioRequest, CreateEstablecimientoRequest, CreateEleccionRequest, CreateCircuitoRequest, CreatePartidoRequest
+from fastapi import HTTPException
 
 def create_usuario(data: CreateUsuarioRequest) -> dict:
     """Crear nuevo usuario (mesa o presidente)"""
@@ -128,4 +129,29 @@ def get_circuitos() -> list:
             return result
     except Exception as e:
         print(f"❌ Error obteniendo circuitos: {e}")
+        return []
+
+def create_partido(data: CreatePartidoRequest) -> dict:
+    """Crear nuevo partido"""
+    try:
+        with get_db_transaction() as connection:
+            partido = AdminDAO.create_partido(connection, data.dict())
+            return {
+                "id": partido["id"],
+                "nombre": partido["nombre"],
+                "color": partido["color"],
+                "mensaje": f"Partido '{partido['nombre']}' creado exitosamente"
+            }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creando partido: {str(e)}")
+
+def get_partidos() -> list:
+    """Obtener lista de partidos"""
+    try:
+        with get_db_connection() as connection:
+            return AdminDAO.get_partidos_list(connection)
+    except Exception as e:
+        print(f"❌ Error obteniendo partidos: {e}")
         return []

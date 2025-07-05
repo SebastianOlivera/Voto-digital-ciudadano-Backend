@@ -48,8 +48,16 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS partidos (
             id INT AUTO_INCREMENT PRIMARY KEY,
             nombre VARCHAR(255) NOT NULL UNIQUE,
-            color VARCHAR(7),
-            logo_url VARCHAR(500)
+            color VARCHAR(7)
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS elecciones (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            año INT NOT NULL,
+            nombre VARCHAR(255) DEFAULT 'Elección General',
+            activa BOOLEAN DEFAULT TRUE,
+            fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
         )
         """,
         """
@@ -58,13 +66,17 @@ def create_tables():
             nombre VARCHAR(255) NOT NULL,
             partido_id INT NOT NULL,
             orden_lista INT,
-            FOREIGN KEY (partido_id) REFERENCES partidos(id)
+            es_presidente BOOLEAN DEFAULT FALSE,
+            numero_lista INT,
+            eleccion_id INT,
+            FOREIGN KEY (partido_id) REFERENCES partidos(id),
+            FOREIGN KEY (eleccion_id) REFERENCES elecciones(id)
         )
         """,
         """
         CREATE TABLE IF NOT EXISTS autorizaciones (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            cedula VARCHAR(20) NOT NULL,
+            credencial VARCHAR(20) NOT NULL,
             circuito_id INT NOT NULL,
             estado ENUM('HABILITADA', 'VOTÓ', 'SUSPENDIDA') DEFAULT 'HABILITADA',
             autorizado_por VARCHAR(100),
@@ -72,7 +84,7 @@ def create_tables():
             fecha_voto DATETIME,
             es_autorizacion_especial BOOLEAN DEFAULT FALSE,
             FOREIGN KEY (circuito_id) REFERENCES circuitos(id),
-            UNIQUE KEY unique_cedula_auth (cedula)
+            UNIQUE KEY unique_credencial_auth (credencial)
         )
         """,
         """
@@ -92,10 +104,10 @@ def create_tables():
         """
         CREATE TABLE IF NOT EXISTS credenciales_autorizadas (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            cedula VARCHAR(20) NOT NULL,
+            credencial VARCHAR(20) NOT NULL,
             circuito_id INT NOT NULL,
             fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY unique_cedula_circuito (cedula, circuito_id),
+            UNIQUE KEY unique_credencial_circuito (credencial, circuito_id),
             FOREIGN KEY (circuito_id) REFERENCES circuitos(id) ON DELETE CASCADE
         )
         """

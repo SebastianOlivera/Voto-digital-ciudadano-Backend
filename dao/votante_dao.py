@@ -6,22 +6,22 @@ class VotanteDAO:
     """Data Access Object para operaciones relacionadas con votantes"""
     
     @staticmethod
-    def get_authorization(connection: mysql.connector.MySQLConnection, cedula: str, circuito_id: int = None) -> Optional[Dict]:
+    def get_authorization(connection: mysql.connector.MySQLConnection, credencial: str, circuito_id: int = None) -> Optional[Dict]:
         """Obtener autorización de votante"""
         cursor = connection.cursor(dictionary=True)
         try:
             if circuito_id:
                 query = """
                 SELECT * FROM autorizaciones 
-                WHERE cedula = %s AND circuito_id = %s
+                WHERE credencial = %s AND circuito_id = %s
                 """
-                cursor.execute(query, (cedula, circuito_id))
+                cursor.execute(query, (credencial, circuito_id))
             else:
                 query = """
                 SELECT * FROM autorizaciones 
-                WHERE cedula = %s
+                WHERE credencial = %s
                 """
-                cursor.execute(query, (cedula,))
+                cursor.execute(query, (credencial,))
             return cursor.fetchone()
         finally:
             cursor.close()
@@ -32,8 +32,8 @@ class VotanteDAO:
         cursor = connection.cursor()
         try:
             query = """
-            INSERT INTO autorizaciones (cedula, circuito_id, estado, autorizado_por, fecha_autorizacion, es_autorizacion_especial)
-            VALUES (%(cedula)s, %(circuito_id)s, %(estado)s, %(autorizado_por)s, %(fecha_autorizacion)s, %(es_autorizacion_especial)s)
+            INSERT INTO autorizaciones (credencial, circuito_id, estado, autorizado_por, fecha_autorizacion, es_autorizacion_especial)
+            VALUES (%(credencial)s, %(circuito_id)s, %(estado)s, %(autorizado_por)s, %(fecha_autorizacion)s, %(es_autorizacion_especial)s)
             """
             cursor.execute(query, auth_data)
             return cursor.lastrowid
@@ -41,7 +41,7 @@ class VotanteDAO:
             cursor.close()
     
     @staticmethod
-    def update_authorization_status(connection: mysql.connector.MySQLConnection, cedula: str, estado: str, fecha_voto: datetime = None) -> bool:
+    def update_authorization_status(connection: mysql.connector.MySQLConnection, credencial: str, estado: str, fecha_voto: datetime = None) -> bool:
         """Actualizar estado de autorización"""
         cursor = connection.cursor()
         try:
@@ -49,16 +49,16 @@ class VotanteDAO:
                 query = """
                 UPDATE autorizaciones 
                 SET estado = %s, fecha_voto = %s 
-                WHERE cedula = %s
+                WHERE credencial = %s
                 """
-                cursor.execute(query, (estado, fecha_voto, cedula))
+                cursor.execute(query, (estado, fecha_voto, credencial))
             else:
                 query = """
                 UPDATE autorizaciones 
                 SET estado = %s 
-                WHERE cedula = %s
+                WHERE credencial = %s
                 """
-                cursor.execute(query, (estado, cedula))
+                cursor.execute(query, (estado, credencial))
             return cursor.rowcount > 0
         finally:
             cursor.close()
@@ -69,7 +69,7 @@ class VotanteDAO:
         cursor = connection.cursor(dictionary=True)
         try:
             query = """
-            SELECT cedula, estado, fecha_autorizacion 
+            SELECT credencial, estado, fecha_autorizacion 
             FROM autorizaciones 
             WHERE circuito_id = %s
             """

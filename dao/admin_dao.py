@@ -59,50 +59,51 @@ class AdminDAO:
         """Crear nueva elección con sus listas"""
         cursor = connection.cursor()
         try:
-            # Primero crear la elección
+            # Desactivar elección anterior
+            cursor.execute("UPDATE elecciones SET activa = FALSE")
+            
+            # Crear nueva elección
             eleccion_query = """
-            INSERT INTO elecciones (año, fecha_creacion)
-            VALUES (%s, %s)
+            INSERT INTO elecciones (año, nombre, activa, fecha_creacion)
+            VALUES (%s, %s, %s, %s)
             """
-            cursor.execute(eleccion_query, (eleccion_data['año'], datetime.now()))
+            cursor.execute(eleccion_query, (
+                eleccion_data['año'], 
+                f"Elección {eleccion_data['año']}", 
+                True, 
+                datetime.now()
+            ))
             eleccion_id = cursor.lastrowid
             
-            # Crear o obtener partidos y candidatos
+            # Crear candidatos para cada lista
             for lista in eleccion_data['listas']:
-                # Crear o obtener partido
-                partido_query = "SELECT id FROM partidos WHERE nombre = %s"
-                cursor.execute(partido_query, (lista['partido'],))
-                partido_result = cursor.fetchone()
-                
-                if partido_result:
-                    partido_id = partido_result[0]
-                else:
-                    cursor.execute("INSERT INTO partidos (nombre) VALUES (%s)", (lista['partido'],))
-                    partido_id = cursor.lastrowid
+                # Verificar que el partido existe
+                cursor.execute("SELECT id FROM partidos WHERE id = %s", (lista['partido_id'],))
+                if not cursor.fetchone():
+                    continue
                 
                 # Crear candidato presidente
                 candidato_query = """
-                INSERT INTO candidatos (nombre, partido_id, es_presidente)
-                VALUES (%s, %s, %s)
+                INSERT INTO candidatos (nombre, partido_id, es_presidente, numero_lista, eleccion_id, orden_lista)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 """
-                cursor.execute(candidato_query, (lista['candidato'], partido_id, True))
-                candidato_id = cursor.lastrowid
+                cursor.execute(candidato_query, (
+                    lista['candidato'], 
+                    lista['partido_id'], 
+                    True, 
+                    lista['numero_lista'], 
+                    eleccion_id,
+                    1
+                ))
                 
                 # Crear vicepresidente
-                cursor.execute(candidato_query, (lista['vicepresidente'], partido_id, False))
-                vicepresidente_id = cursor.lastrowid
-                
-                # Crear lista electoral
-                lista_query = """
-                INSERT INTO listas_electorales (numero_lista, candidato_presidente_id, candidato_vicepresidente_id, partido_id, eleccion_id)
-                VALUES (%s, %s, %s, %s, %s)
-                """
-                cursor.execute(lista_query, (
-                    lista['numero_lista'],
-                    candidato_id,
-                    vicepresidente_id,
-                    partido_id,
-                    eleccion_id
+                cursor.execute(candidato_query, (
+                    lista['vicepresidente'], 
+                    lista['partido_id'], 
+                    False, 
+                    lista['numero_lista'], 
+                    eleccion_id,
+                    2
                 ))
             
             return True
@@ -110,6 +111,44 @@ class AdminDAO:
             cursor.close()
     
     @staticmethod
+    def get_partidos_list(connection: mysql.connector.MySQLConnection) -> List[Dict]:
+        """Obtener lista de partidos para selección"""
+        cursor = connection.cursor(dictionary=True)
+        try:
+            query = """
+            SELECT id, nombre, color
+            FROM partidos
+            ORDER BY nombre
+            """
+            cursor.execute(query)
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+    
+    @staticmethod
+    def create_partido(connection: mysql.connector.MySQLConnection, partido_data: Dict) -> Dict:
+        """Crear nuevo partido"""
+        cursor = connection.cursor(dictionary=True)
+        try:
+            # Verificar si ya existe el partido
+            check_query = "SELECT id FROM partidos WHERE nombre = %s"
+            cursor.execute(check_query, (partido_data['nombre'],))
+            if cursor.fetchone():
+                raise ValueError(f"Ya existe un partido con el nombre '{partido_data['nombre']}'")
+            
+            # Crear el partido
+            query = """
+            INSERT INTO partidos (nombre, color) 
+            VALUES (%(nombre)s, %(color)s)
+            """
+            cursor.execute(query, partido_data)
+            partido_id = cursor.lastrowid
+            
+            # Obtener el partido creado
+            cursor.execute("SELECT * FROM partidos WHERE id = %s", (partido_id,))
+            return cursor.fetchone()
+        finally:
+            cursor.close()
     def create_circuito(connection: mysql.connector.MySQLConnection, circuito_data: Dict) -> int:
         """Crear nuevo circuito"""
         cursor = connection.cursor()

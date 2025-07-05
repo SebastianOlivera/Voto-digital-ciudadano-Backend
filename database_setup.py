@@ -81,38 +81,52 @@ def update_database_structure():
             print("Agregando columna 'es_autorizacion_especial'...")
             cursor.execute("ALTER TABLE autorizaciones ADD COLUMN es_autorizacion_especial BOOLEAN DEFAULT FALSE")
         
-        # Crear tablas de elecciones y listas si no existen
+        # Crear tablas de elecciones si no existen
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS elecciones (
             id INT AUTO_INCREMENT PRIMARY KEY,
             año INT NOT NULL UNIQUE,
+            activa BOOLEAN DEFAULT FALSE,
             fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
         )
         """)
         
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS listas_electorales (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            numero_lista INT NOT NULL,
-            candidato_presidente_id INT,
-            candidato_vicepresidente_id INT,
-            partido_id INT,
-            eleccion_id INT,
-            FOREIGN KEY (candidato_presidente_id) REFERENCES candidatos(id),
-            FOREIGN KEY (candidato_vicepresidente_id) REFERENCES candidatos(id),
-            FOREIGN KEY (partido_id) REFERENCES partidos(id),
-            FOREIGN KEY (eleccion_id) REFERENCES elecciones(id),
-            UNIQUE KEY unique_lista_eleccion (numero_lista, eleccion_id)
-        )
-        """)
-        
-        # Agregar columna es_presidente a candidatos si no existe
+        # Agregar columnas necesarias a candidatos
         cursor.execute("DESCRIBE candidatos")
         candidato_columns = [column[0] for column in cursor.fetchall()]
         
         if 'es_presidente' not in candidato_columns:
             print("Agregando columna 'es_presidente' a candidatos...")
             cursor.execute("ALTER TABLE candidatos ADD COLUMN es_presidente BOOLEAN DEFAULT TRUE")
+            
+        if 'numero_lista' not in candidato_columns:
+            print("Agregando columna 'numero_lista' a candidatos...")
+            cursor.execute("ALTER TABLE candidatos ADD COLUMN numero_lista INT")
+            
+        if 'eleccion_id' not in candidato_columns:
+            print("Agregando columna 'eleccion_id' a candidatos...")
+            cursor.execute("ALTER TABLE candidatos ADD COLUMN eleccion_id INT")
+            
+        # Agregar columna color a partidos si no existe
+        cursor.execute("DESCRIBE partidos")
+        partido_columns = [column[0] for column in cursor.fetchall()]
+        
+        # Eliminar logo_url de partidos si existe
+        cursor.execute("DESCRIBE partidos")
+        partido_columns = [column[0] for column in cursor.fetchall()]
+        
+        if 'logo_url' in partido_columns:
+            print("Eliminando columna 'logo_url' de partidos...")
+            cursor.execute("ALTER TABLE partidos DROP COLUMN logo_url")
+
+        if 'color' not in partido_columns:
+            print("Agregando columna 'color' a partidos...")
+            cursor.execute("ALTER TABLE partidos ADD COLUMN color VARCHAR(7)")
+            
+        if 'activa' not in partido_columns:
+            print("Agregando columna 'activa' a elecciones...")
+            cursor.execute("ALTER TABLE elecciones ADD COLUMN activa BOOLEAN DEFAULT FALSE")
+        
         
         conn.commit()
         print("✅ Estructura de base de datos actualizada exitosamente!")
@@ -212,27 +226,53 @@ def create_mock_data():
         ]
         
         cursor.executemany(
-            "INSERT INTO credenciales_autorizadas (cedula, circuito_id) VALUES (%s, %s)",
+            "INSERT INTO credenciales_autorizadas (credencial, circuito_id) VALUES (%s, %s)",
             credenciales_por_circuito
         )
         print("✓ Credenciales específicas por circuito creadas")
         
-        # 3. Crear partidos
-        partidos = [
-            ('Frente Amplio',), ('Partido Nacional',), ('Partido Colorado',), ('Cabildo Abierto',), ('Partido Independiente',)
+        # 3. Crear partidos con colores
+        partidos_data = [
+            ('Frente Amplio', '#87CEFA'),  # Azul claro
+            ('Partido Nacional', '#87CEEB'),  # Celeste
+            ('Partido Blanco', '#87CEEB'),  # Celeste  
+            ('Partido Colorado', '#FFB6C1'),  # Rojo claro
+            ('Cabildo Abierto', '#DDA0DD'),  # Púrpura claro
+            ('Partido Independiente', '#98FB98')  # Verde claro
         ]
-        cursor.executemany("INSERT INTO partidos (nombre) VALUES (%s)", partidos)
-        print("✓ Partidos creados")
+        cursor.executemany("INSERT INTO partidos (nombre, color) VALUES (%s, %s)", partidos_data)
+        print("✓ Partidos con colores creados")
         
-        # 4. Crear candidatos
-        candidatos = [
-            ('Yamandú Orsi', 1), ('Álvaro Delgado', 2), ('Andrés Ojeda', 3), 
-            ('Guido Manini Ríos', 4), ('Pablo Mieres', 5)
+        # 4. Crear elección activa
+        cursor.execute("INSERT INTO elecciones (año, activa) VALUES (2024, TRUE)")
+        eleccion_id = cursor.lastrowid
+        print("✓ Elección 2024 creada y activada")
+        
+        # 5. Crear candidatos con presidente/vicepresidente
+        candidatos_data = [
+            # Frente Amplio
+            ('Yamandú Orsi', 1, True, 1, eleccion_id),
+            ('Carolina Cosse', 1, False, 1, eleccion_id),
+            # Partido Nacional  
+            ('Álvaro Delgado', 2, True, 2, eleccion_id),
+            ('Valeria Ripoll', 2, False, 2, eleccion_id),
+            # Partido Colorado
+            ('Andrés Ojeda', 3, True, 3, eleccion_id),
+            ('Robert Silva', 3, False, 3, eleccion_id),
+            # Cabildo Abierto
+            ('Guido Manini Ríos', 4, True, 4, eleccion_id),
+            ('Lorena Ponce de León', 4, False, 4, eleccion_id),
+            # Partido Independiente
+            ('Pablo Mieres', 5, True, 5, eleccion_id),
+            ('Iván Posada', 5, False, 5, eleccion_id),
         ]
-        cursor.executemany("INSERT INTO candidatos (nombre, partido_id) VALUES (%s, %s)", candidatos)
-        print("✓ Candidatos creados")
+        cursor.executemany(
+            "INSERT INTO candidatos (nombre, partido_id, es_presidente, numero_lista, eleccion_id) VALUES (%s, %s, %s, %s, %s)", 
+            candidatos_data
+        )
+        print("✓ Candidatos presidente-vicepresidente creados")
         
-        # 5. Crear usuarios con hash correcto
+        # 6. Crear usuarios con hash correcto
         password_hash = pwd_context.hash("password123")
         usuarios = [
             ("mesa001", password_hash, True, 1, "mesa"),
@@ -250,7 +290,7 @@ def create_mock_data():
         )
         print("✓ Usuarios creados")
         
-        # 6. Crear 100 votos de ejemplo
+        # 7. Crear 100 votos de ejemplo
         import random
         votos = []
         

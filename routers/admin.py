@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
-from services.admin_service import create_usuario, create_establecimiento, create_eleccion, create_circuito, get_establecimientos, get_circuitos
+from services.admin_service import create_usuario, create_establecimiento, create_eleccion, create_circuito, create_partido, get_establecimientos, get_circuitos, get_partidos
 from schemas import (
-    CreateUsuarioRequest, CreateEstablecimientoRequest, CreateEleccionRequest, CreateCircuitoRequest,
-    UsuarioCreatedResponse, EstablecimientoCreatedResponse
+    CreateUsuarioRequest, CreateEstablecimientoRequest, CreateEleccionRequest, CreateCircuitoRequest, CreatePartidoRequest,
+    UsuarioCreatedResponse, EstablecimientoCreatedResponse, PartidoCreatedResponse
 )
 from auth import verify_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -47,6 +47,14 @@ async def crear_eleccion(
         raise HTTPException(status_code=400, detail=result["error"])
     return result
 
+@router.post("/partido", response_model=PartidoCreatedResponse)
+async def crear_partido(
+    request: CreatePartidoRequest,
+    current_user: str = Depends(get_current_user)
+):
+    """Crear nuevo partido - solo para admin"""
+    return create_partido(request)
+
 @router.post("/circuito")
 async def crear_circuito(
     request: CreateCircuitoRequest,
@@ -71,3 +79,10 @@ async def obtener_circuitos(
 ):
     """Obtener lista de circuitos"""
     return get_circuitos()
+
+@router.get("/partidos")
+async def obtener_partidos(
+    current_user: str = Depends(get_current_user)
+):
+    """Obtener lista de partidos"""
+    return get_partidos()

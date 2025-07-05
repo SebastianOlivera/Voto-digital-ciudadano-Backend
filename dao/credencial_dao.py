@@ -5,8 +5,8 @@ class CredencialDAO:
     """Data Access Object para operaciones relacionadas con credenciales autorizadas por circuito"""
     
     @staticmethod
-    def get_circuito_by_cedula(connection: mysql.connector.MySQLConnection, cedula: str) -> Optional[Dict]:
-        """Obtener el circuito asignado a una cédula"""
+    def get_circuito_by_credencial(connection: mysql.connector.MySQLConnection, credencial: str) -> Optional[Dict]:
+        """Obtener el circuito asignado a una credencial"""
         cursor = connection.cursor(dictionary=True)
         try:
             query = """
@@ -14,25 +14,25 @@ class CredencialDAO:
             FROM credenciales_autorizadas ca
             JOIN circuitos c ON ca.circuito_id = c.id
             JOIN establecimientos e ON c.establecimiento_id = e.id
-            WHERE ca.cedula = %s
+            WHERE ca.credencial = %s
             """
-            cursor.execute(query, (cedula,))
+            cursor.execute(query, (credencial,))
             return cursor.fetchone()
         finally:
             cursor.close()
     
     @staticmethod
-    def is_cedula_authorized_for_circuit(connection: mysql.connector.MySQLConnection, cedula: str, circuito_numero: str) -> bool:
-        """Verificar si una cédula está autorizada para votar en un circuito específico"""
+    def is_credencial_authorized_for_circuit(connection: mysql.connector.MySQLConnection, credencial: str, circuito_numero: str) -> bool:
+        """Verificar si una credencial está autorizada para votar en un circuito específico"""
         cursor = connection.cursor()
         try:
             query = """
             SELECT COUNT(*) as count
             FROM credenciales_autorizadas ca
             JOIN circuitos c ON ca.circuito_id = c.id
-            WHERE ca.cedula = %s AND c.numero_circuito = %s
+            WHERE ca.credencial = %s AND c.numero_circuito = %s
             """
-            cursor.execute(query, (cedula, circuito_numero))
+            cursor.execute(query, (credencial, circuito_numero))
             result = cursor.fetchone()
             return result[0] > 0
         finally:
@@ -85,15 +85,15 @@ class CredencialDAO:
                 
                 # Insertar la credencial autorizada
                 insert_query = """
-                INSERT IGNORE INTO credenciales_autorizadas (cedula, circuito_id)
+                INSERT IGNORE INTO credenciales_autorizadas (credencial, circuito_id)
                 VALUES (%s, %s)
                 """
-                cursor.execute(insert_query, (credencial['cedula_autorizada'], circuito_id))
+                cursor.execute(insert_query, (credencial['credencial_autorizada'], circuito_id))
                 
                 # Verificar si se insertó (rowcount es 1 si se insertó, 0 si ya existía)
                 if cursor.rowcount > 0:
                     inserted_count += 1
-                    print(f"Insertada credencial {credencial['cedula_autorizada']} para circuito {circuito_numero}")
+                    print(f"Insertada credencial {credencial['credencial_autorizada']} para circuito {circuito_numero}")
             
             return inserted_count
         finally:
@@ -105,11 +105,11 @@ class CredencialDAO:
         cursor = connection.cursor(dictionary=True)
         try:
             query = """
-            SELECT ca.cedula, ca.fecha_creacion
+            SELECT ca.credencial, ca.fecha_creacion
             FROM credenciales_autorizadas ca
             JOIN circuitos c ON ca.circuito_id = c.id
             WHERE c.numero_circuito = %s
-            ORDER BY ca.cedula
+            ORDER BY ca.credencial
             """
             cursor.execute(query, (circuito_numero,))
             return cursor.fetchall()

@@ -26,22 +26,22 @@ async def upload_credenciales_csv(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error cargando credenciales: {str(e)}")
 
-@router.get("/circuito/{cedula}")
-async def get_circuito_by_cedula(
-    cedula: str,
+@router.get("/circuito/{credencial}")
+async def get_circuito_by_credencial(
+    credencial: str,
     current_user: str = Depends(get_current_user)
 ):
-    """Obtener el circuito asignado a una cédula"""
+    """Obtener el circuito asignado a una credencial"""
     try:
         with get_db_connection() as connection:
-            circuito_data = CredencialDAO.get_circuito_by_cedula(connection, cedula)
+            circuito_data = CredencialDAO.get_circuito_by_credencial(connection, credencial)
             if not circuito_data:
-                raise HTTPException(status_code=404, detail="Cédula no encontrada en el sistema")
+                raise HTTPException(status_code=404, detail="Credencial no encontrada en el sistema")
             return circuito_data
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error consultando cédula: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error consultando credencial: {str(e)}")
 
 @router.get("/lista/{circuito_numero}")
 async def get_credenciales_by_circuit(

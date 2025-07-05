@@ -48,13 +48,13 @@ def cast_vote(voto: VotoRequest, current_user: str) -> VotoResponse:
         circuito_id = mesa_user['circuito_id']
         
         # Verificar que el votante esté autorizado
-        auth_record = VotanteDAO.get_authorization(connection, voto.cedula)
+        auth_record = VotanteDAO.get_authorization(connection, voto.credencial)
         if not auth_record or auth_record['estado'] != 'HABILITADA':
             raise HTTPException(status_code=403, detail="Votante no autorizado para votar")
         
         # Verificar que no haya votado ya (usando tabla autorizaciones)
         if auth_record['estado'] == 'VOTÓ':
-            raise HTTPException(status_code=400, detail="Esta cédula ya ha votado")
+            raise HTTPException(status_code=400, detail="Esta credencial ya ha votado")
     
         # Generar comprobante único
         numero_comprobante = generate_comprobante(circuito_id)
@@ -88,7 +88,7 @@ def cast_vote(voto: VotoRequest, current_user: str) -> VotoResponse:
         VotoDAO.create_vote(connection, vote_data)
         
         # Actualizar estado de autorización
-        VotanteDAO.update_authorization_status(connection, voto.cedula, 'VOTÓ', datetime.now())
+        VotanteDAO.update_authorization_status(connection, voto.credencial, 'VOTÓ', datetime.now())
     
         mensaje = f"Voto registrado exitosamente. Comprobante: {numero_comprobante}"
         if es_observado:
