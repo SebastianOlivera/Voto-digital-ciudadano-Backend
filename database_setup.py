@@ -218,11 +218,11 @@ def create_mock_data():
         # Agregar credenciales específicas por circuito
         credenciales_por_circuito = [
             # Circuito 001
-            ('12345671', 1), ('12345672', 1), ('12345673', 1), ('12345674', 1), ('12345675', 1),
+            ('ABC001001', 1), ('ABC001002', 1), ('ABC001003', 1), ('ABC001004', 1), ('ABC001005', 1),
             # Circuito 002
-            ('22345671', 2), ('22345672', 2), ('22345673', 2), ('22345674', 2), ('22345675', 2),
+            ('ABC002001', 2), ('ABC002002', 2), ('ABC002003', 2), ('ABC002004', 2), ('ABC002005', 2),
             # Circuito 003
-            ('32345671', 3), ('32345672', 3), ('32345673', 3), ('32345674', 3), ('32345675', 3),
+            ('ABC003001', 3), ('ABC003002', 3), ('ABC003003', 3), ('ABC003004', 3), ('ABC003005', 3),
         ]
         
         cursor.executemany(
@@ -235,7 +235,6 @@ def create_mock_data():
         partidos_data = [
             ('Frente Amplio', '#87CEFA'),  # Azul claro
             ('Partido Nacional', '#87CEEB'),  # Celeste
-            ('Partido Blanco', '#87CEEB'),  # Celeste  
             ('Partido Colorado', '#FFB6C1'),  # Rojo claro
             ('Cabildo Abierto', '#DDA0DD'),  # Púrpura claro
             ('Partido Independiente', '#98FB98')  # Verde claro
@@ -243,36 +242,7 @@ def create_mock_data():
         cursor.executemany("INSERT INTO partidos (nombre, color) VALUES (%s, %s)", partidos_data)
         print("✓ Partidos con colores creados")
         
-        # 4. Crear elección activa
-        cursor.execute("INSERT INTO elecciones (año, activa) VALUES (2024, TRUE)")
-        eleccion_id = cursor.lastrowid
-        print("✓ Elección 2024 creada y activada")
-        
-        # 5. Crear candidatos con presidente/vicepresidente
-        candidatos_data = [
-            # Frente Amplio
-            ('Yamandú Orsi', 1, True, 1, eleccion_id),
-            ('Carolina Cosse', 1, False, 1, eleccion_id),
-            # Partido Nacional  
-            ('Álvaro Delgado', 2, True, 2, eleccion_id),
-            ('Valeria Ripoll', 2, False, 2, eleccion_id),
-            # Partido Colorado
-            ('Andrés Ojeda', 3, True, 3, eleccion_id),
-            ('Robert Silva', 3, False, 3, eleccion_id),
-            # Cabildo Abierto
-            ('Guido Manini Ríos', 4, True, 4, eleccion_id),
-            ('Lorena Ponce de León', 4, False, 4, eleccion_id),
-            # Partido Independiente
-            ('Pablo Mieres', 5, True, 5, eleccion_id),
-            ('Iván Posada', 5, False, 5, eleccion_id),
-        ]
-        cursor.executemany(
-            "INSERT INTO candidatos (nombre, partido_id, es_presidente, numero_lista, eleccion_id) VALUES (%s, %s, %s, %s, %s)", 
-            candidatos_data
-        )
-        print("✓ Candidatos presidente-vicepresidente creados")
-        
-        # 6. Crear usuarios con hash correcto
+        # 4. Crear usuarios con hash correcto
         password_hash = pwd_context.hash("password123")
         usuarios = [
             ("mesa001", password_hash, True, 1, "mesa"),
@@ -290,26 +260,26 @@ def create_mock_data():
         )
         print("✓ Usuarios creados")
         
-        # 7. Crear 100 votos de ejemplo
-        import random
+        # 5. Generar algunos votos de ejemplo (sin candidatos específicos)
+        # Generar algunos votos de ejemplo con candidatos genéricos
         votos = []
         
         # Contadores por circuito para generar comprobantes únicos
         circuito_counters = {}
         
-        # Generar 100 votos con distribución realista
-        for i in range(100):
-            # Distribución de votos: 70% candidatos, 20% blanco (NULL), 10% anulado (es_anulado=True)
+        # Generar 50 votos de ejemplo con distribución realista
+        for i in range(50):
+            # 60% votos en blanco, 30% votos anulados, 10% votos a candidatos ficticios  
             rand = random.random()
-            if rand < 0.7:
-                candidato_id = random.randint(1, 5)  # Candidatos 1-5
-                es_anulado = False
-            elif rand < 0.9:
+            if rand < 0.6:
                 candidato_id = None  # Voto en blanco (NULL)
                 es_anulado = False
+            elif rand < 0.9:
+                candidato_id = None
+                es_anulado = True  # Voto anulado
             else:
-                candidato_id = random.randint(1, 5)  # Candidato cualquiera pero anulado
-                es_anulado = True
+                candidato_id = random.randint(1, 3)  # Candidatos ficticios 1-3
+                es_anulado = False
                 
             circuito_id = random.choice([1, 2, 3, 16, 17, 18, 26, 27, 28])
             es_observado = random.random() < 0.05  # 5% de votos observados
@@ -327,7 +297,12 @@ def create_mock_data():
             "INSERT INTO votos (numero_comprobante, candidato_id, circuito_id, es_observado, estado_validacion, es_anulado, timestamp) VALUES (%s, %s, %s, %s, %s, %s, NOW())",
             votos
         )
-        print("✓ Votos de ejemplo creados")
+        print("✓ Votos de ejemplo creados (principalmente en blanco y anulados)")
+        
+        print("\n🎯 NOTA IMPORTANTE:")
+        print("   - No se crearon elecciones ni candidatos")
+        print("   - Usa la interfaz de Admin para crear elecciones")
+        print("   - Los votos de ejemplo son principalmente en blanco/anulados")
         
         conn.commit()
         print("🎉 Datos mock creados exitosamente!")
