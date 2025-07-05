@@ -2,10 +2,11 @@ from fastapi import HTTPException
 from datetime import datetime
 from database import get_db_connection, get_db_transaction
 from dao.votante_dao import VotanteDAO
+from dao.credencial_dao import CredencialDAO
 from schemas import VoteEnableRequest, VotanteStatus
 
 def enable_voter(request: VoteEnableRequest, current_user: str) -> dict:
-    """Autorizar votante"""
+    """Autorizar votante con verificación de circuito"""
     with get_db_transaction() as connection:
         # Para votos observados, usar la cédula real del votante
         cedula_a_autorizar = request.cedula_real if request.esEspecial and request.cedula_real else request.credencial
@@ -15,6 +16,22 @@ def enable_voter(request: VoteEnableRequest, current_user: str) -> dict:
         
         if existing_auth:
             raise HTTPException(status_code=400, detail="Votante ya autorizado")
+        
+        # Verificar si la cédula está autorizada para este circuito
+        is_authorized_for_circuit = CredencialDAO.is_cedula_authorized_for_circuit(
+            connection, cedula_a_autorizar, request.circuito
+        )
+        
+        # Si no está autorizada para este circuito, debe ser voto observado
+        if not is_authorized_for_circuit and not request.esEspecial:
+            # Obtener el circuito correcto de la cédula
+            circuito_correcto = CredencialDAO.get_circuito_by_cedula(connection, cedula_a_autorizar)
+            circuito_msg = f" (pertenece al circuito {circuito_correcto['numero_circuito']})" if circuito_correcto else ""
+            
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cédula no autorizada para este circuito{circuito_msg}. Debe ser registrada como voto observado."
+            )
         
         # Crear nueva autorización
         auth_data = {
@@ -28,7 +45,13 @@ def enable_voter(request: VoteEnableRequest, current_user: str) -> dict:
         VotanteDAO.create_authorization(connection, auth_data)
         
         tipo_voto = "observado" if request.esEspecial else "normal"
-        return {"mensaje": f"Votante {cedula_a_autorizar} autorizado exitosamente para voto {tipo_voto}"}
+        mensaje_extra = ""
+        if not is_authorized_for_circuit and request.esEspecial:
+            circuito_correcto = CredencialDAO.get_circuito_by_cedula(connection, cedula_a_autorizar)
+            if circuito_correcto:
+                mensaje_extra = f" (cédula pertenece al circuito {circuito_correcto['numero_circuito']})"
+        
+        return {"mensaje": f"Votante {cedula_a_autorizar} autorizado exitosamente para voto {tipo_voto}{mensaje_extra}"}
 
 def get_voter_status(circuito: str, cedula: str) -> VotanteStatus:
     """Verificar estado de votante"""
@@ -41,8 +64,10 @@ def get_voter_status(circuito: str, cedula: str) -> VotanteStatus:
         return VotanteStatus(
             cedula=auth_record['cedula'],
             estado=auth_record['estado'],
-            autorizado_por=auth_record['autorizado_por'],
-            fecha_autorizacion=auth_record['fecha_autorizacion']
+            circuito_id=auth_record.get('circuito_id'),
+            fecha_autorizacion=auth_record.get('fecha_autorizacion'),
+            fecha_voto=auth_record.get('fecha_voto'),
+            es_autorizacion_especial=auth_record.get('es_autorizacion_especial', False)
         )
 
 def get_voters_by_circuit(circuito: str) -> list:

@@ -1,25 +1,9 @@
+
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional, List
 from datetime import datetime
 
-class CandidatoResponse(BaseModel):
-    id: int
-    nombre: str
-
-class PartidoResponse(BaseModel):
-    partido: str
-    candidatos: List[CandidatoResponse]
-
-class VotoRequest(BaseModel):
-    cedula: str
-    candidato_id: int
-
-class VoteEnableRequest(BaseModel):
-    credencial: str
-    circuito: str
-    esEspecial: Optional[bool] = False
-    cedula_real: Optional[str] = None  # Para votos observados
-
+# Esquemas de respuesta
 class EstablecimientoInfo(BaseModel):
     id: int
     nombre: str
@@ -43,24 +27,36 @@ class LoginResponse(BaseModel):
     username: str
     role: str
 
-class VotoResponse(BaseModel):
-    mensaje: str
+class CandidatoResponse(BaseModel):
+    id: int
+    nombre: str
+    orden_lista: Optional[int] = None
 
-class ResultadosResponse(BaseModel):
-    resultados: List[dict]
-    votos_blanco: int
-    total_votos: int
-    total_votantes: int
-    participacion: float
-    votos_observados: int
-    mesas_cerradas: int
-    total_mesas: int
+class PartidoResponse(BaseModel):
+    partido: str
+    candidatos: List[CandidatoResponse]
+
+# Esquemas de request
+class VoteEnableRequest(BaseModel):
+    credencial: str
+    circuito: str  # Agregar el campo circuito que faltaba
+    cedula_real: Optional[str] = None
+    esEspecial: bool = False
 
 class VotanteStatus(BaseModel):
     cedula: str
     estado: str
-    autorizado_por: Optional[str] = None
+    circuito_id: Optional[int] = None
     fecha_autorizacion: Optional[datetime] = None
+    fecha_voto: Optional[datetime] = None
+    es_autorizacion_especial: Optional[bool] = False
+
+class VotoRequest(BaseModel):
+    cedula: str
+    candidato_id: int  # -1 = anulado, 0 = blanco, >0 = candidato
+
+class VotoResponse(BaseModel):
+    mensaje: str
 
 class ValidarVotoRequest(BaseModel):
     voto_id: int

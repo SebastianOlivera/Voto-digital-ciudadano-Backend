@@ -16,7 +16,8 @@ def get_candidates() -> List[PartidoResponse]:
                 partidos_dict[partido_nombre] = []
             partidos_dict[partido_nombre].append(CandidatoResponse(
                 id=candidato['id'],
-                nombre=candidato['candidato_nombre']
+                nombre=candidato['candidato_nombre'],
+                orden_lista=candidato.get('orden_lista')
             ))
         
         return [

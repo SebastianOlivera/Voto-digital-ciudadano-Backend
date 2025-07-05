@@ -140,6 +140,7 @@ def create_mock_data():
             ('001', 'A', 1), ('002', 'B', 1), ('003', 'C', 1),
             ('004', 'A', 2), ('005', 'B', 2), ('006', 'A', 3),
             ('007', 'A', 4), ('008', 'B', 4), ('009', 'A', 5),
+            ('010', 'A', 5),  # Added missing circuit 010
             ('016', 'A', 6), ('017', 'B', 6), ('018', 'A', 7),
             ('019', 'A', 8), ('020', 'A', 9), ('026', 'A', 10),
             ('027', 'A', 11), ('028', 'A', 12), ('036', 'A', 13),
@@ -154,6 +155,26 @@ def create_mock_data():
             circuitos
         )
         print("✓ Circuitos creados")
+        
+        # Clear credenciales_autorizadas and add some examples
+        cursor.execute("DELETE FROM credenciales_autorizadas")
+        print("✓ Tabla credenciales_autorizadas limpiada")
+        
+        # Agregar credenciales específicas por circuito
+        credenciales_por_circuito = [
+            # Circuito 001
+            ('12345671', 1), ('12345672', 1), ('12345673', 1), ('12345674', 1), ('12345675', 1),
+            # Circuito 002
+            ('22345671', 2), ('22345672', 2), ('22345673', 2), ('22345674', 2), ('22345675', 2),
+            # Circuito 003
+            ('32345671', 3), ('32345672', 3), ('32345673', 3), ('32345674', 3), ('32345675', 3),
+        ]
+        
+        cursor.executemany(
+            "INSERT INTO credenciales_autorizadas (cedula, circuito_id) VALUES (%s, %s)",
+            credenciales_por_circuito
+        )
+        print("✓ Credenciales específicas por circuito creadas")
         
         # 3. Crear partidos
         partidos = [
@@ -179,7 +200,7 @@ def create_mock_data():
             ("presidente001", password_hash, True, 1, "presidente"),
             ("presidente002", password_hash, True, 2, "presidente"),
             ("presidente003", password_hash, True, 3, "presidente"),
-            ("admin", password_hash, True, None, "superadmin"),
+            ("admin", password_hash, True, 1, "superadmin"),
         ]
         
         cursor.executemany(
@@ -188,21 +209,39 @@ def create_mock_data():
         )
         print("✓ Usuarios creados")
         
-        # 6. Crear votos de ejemplo
-        votos = [
-            ('87654321', 1, 1, False, 'aprobado'),
-            ('88888888', 1, 2, False, 'aprobado'),
-            ('12341234', 2, 3, False, 'aprobado'),
-            ('22222222', 2, 16, False, 'aprobado'),
-            ('11112222', 1, 17, False, 'aprobado'),
-            ('33334444', 3, 18, False, 'aprobado'),
-            ('55555555', 1, 26, False, 'aprobado'),
-            ('44445555', 2, 27, False, 'aprobado'),
-            ('66667777', 3, 28, False, 'aprobado'),
-        ]
+        # 6. Crear 100 votos de ejemplo
+        import random
+        votos = []
+        
+        # Generar 100 votos con distribución realista
+        for i in range(100):
+            cedula = f"{random.randint(10000000, 99999999)}"
+            # Distribución de votos: 70% candidatos, 20% blanco (NULL), 10% anulado (es_anulado=True)
+            rand = random.random()
+            if rand < 0.7:
+                candidato_id = random.randint(1, 5)  # Candidatos 1-5
+                es_anulado = False
+            elif rand < 0.9:
+                candidato_id = None  # Voto en blanco (NULL)
+                es_anulado = False
+            else:
+                candidato_id = random.randint(1, 5)  # Candidato cualquiera pero anulado
+                es_anulado = True
+                
+            circuito_id = random.choice([1, 2, 3, 16, 17, 18, 26, 27, 28])
+            es_observado = random.random() < 0.05  # 5% de votos observados
+            
+            votos.append((cedula, candidato_id, circuito_id, es_observado, 'aprobado', es_anulado))
+        
+        # Agregar algunos votos específicos para testing
+        votos.extend([
+            ('87654321', 1, 1, False, 'aprobado', False),
+            ('88888888', 1, 2, False, 'aprobado', False),
+            ('12341234', 2, 3, False, 'aprobado', False),
+        ])
         
         cursor.executemany(
-            "INSERT INTO votos (cedula, candidato_id, circuito_id, es_observado, estado_validacion) VALUES (%s, %s, %s, %s, %s)",
+            "INSERT INTO votos (cedula, candidato_id, circuito_id, es_observado, estado_validacion, es_anulado, timestamp) VALUES (%s, %s, %s, %s, %s, %s, NOW())",
             votos
         )
         print("✓ Votos de ejemplo creados")

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from database import init_connection_pool
-from routers import auth, votante, voto, candidato, resultado, mesa
+from routers import auth, votante, voto, candidato, resultado, mesa, credencial
 
 load_dotenv()
 app = FastAPI(title="Sistema de Votación API")
@@ -26,6 +26,7 @@ app.include_router(voto.router, prefix="/api", tags=["voto"])
 app.include_router(candidato.router, prefix="/api/candidatos", tags=["candidato"])
 app.include_router(resultado.router, prefix="/api/resultados", tags=["resultado"])
 app.include_router(mesa.router, prefix="/api/circuito", tags=["mesa"])
+app.include_router(credencial.router, prefix="/api/credenciales", tags=["credenciales"])
 
 
 if __name__ == "__main__":

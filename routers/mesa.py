@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from services.mesa_service import close_circuit, close_mesa
+from services.mesa_service import close_circuit, close_mesa, get_mesas_estado
 from schemas import CerrarMesaRequest
 from auth import verify_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -26,3 +26,10 @@ async def cerrar_mesa(
 ):
     """Cerrar mesa - solo presidente de mesa"""
     return close_mesa(request.circuito)
+
+@router.get("/estado")
+async def get_mesas_estado(
+    current_user: str = Depends(get_current_user)
+):
+    """Obtener estado de todas las mesas"""
+    return get_mesas_estado()

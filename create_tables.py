@@ -79,14 +79,24 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS votos (
             id INT AUTO_INCREMENT PRIMARY KEY,
             cedula VARCHAR(20) NOT NULL UNIQUE,
-            candidato_id INT,
-            timestamp DATETIME NOT NULL,
+            candidato_id INT NULL,
+            timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             es_observado BOOLEAN DEFAULT FALSE,
             estado_validacion ENUM('pendiente', 'aprobado', 'rechazado') DEFAULT 'aprobado',
             circuito_id INT NOT NULL,
             es_anulado BOOLEAN DEFAULT FALSE,
-            FOREIGN KEY (candidato_id) REFERENCES candidatos(id),
+            FOREIGN KEY (candidato_id) REFERENCES candidatos(id) ON DELETE SET NULL,
             FOREIGN KEY (circuito_id) REFERENCES circuitos(id)
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS credenciales_autorizadas (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            cedula VARCHAR(20) NOT NULL,
+            circuito_id INT NOT NULL,
+            fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY unique_cedula_circuito (cedula, circuito_id),
+            FOREIGN KEY (circuito_id) REFERENCES circuitos(id) ON DELETE CASCADE
         )
         """
     ]

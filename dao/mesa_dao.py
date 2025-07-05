@@ -55,3 +55,30 @@ class MesaDAO:
             return cursor.rowcount > 0
         finally:
             cursor.close()
+    
+    @staticmethod
+    def get_all_mesas_estado(connection: mysql.connector.MySQLConnection) -> List[Dict]:
+        """Obtener estado de todas las mesas"""
+        cursor = connection.cursor(dictionary=True)
+        try:
+            query = """
+            SELECT 
+                c.numero_circuito as circuito,
+                e.nombre as establecimiento,
+                e.departamento,
+                CASE 
+                    WHEN MAX(u.mesa_cerrada) = TRUE THEN 'cerrada'
+                    ELSE 'abierta'
+                END as estado,
+                (SELECT COUNT(*) FROM credenciales_autorizadas ca WHERE ca.circuito_id = c.id) as votantes_autorizados,
+                NOW() as ultima_actividad
+            FROM circuitos c
+            LEFT JOIN establecimientos e ON c.establecimiento_id = e.id
+            LEFT JOIN usuarios u ON u.circuito_id = c.id
+            GROUP BY c.id, c.numero_circuito, e.nombre, e.departamento
+            ORDER BY c.numero_circuito
+            """
+            cursor.execute(query)
+            return cursor.fetchall()
+        finally:
+            cursor.close()

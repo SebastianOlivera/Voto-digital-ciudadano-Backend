@@ -10,10 +10,10 @@ class CandidatoDAO:
         cursor = connection.cursor(dictionary=True)
         try:
             query = """
-            SELECT c.id, c.nombre as candidato_nombre, p.nombre as partido_nombre
+            SELECT c.id, c.nombre as candidato_nombre, c.orden_lista, p.nombre as partido_nombre
             FROM candidatos c
             JOIN partidos p ON c.partido_id = p.id
-            ORDER BY p.nombre, c.nombre
+            ORDER BY p.nombre, c.orden_lista
             """
             cursor.execute(query)
             return cursor.fetchall()
