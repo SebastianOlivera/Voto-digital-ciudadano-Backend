@@ -3,6 +3,7 @@ from services.mesa_service import close_circuit, close_mesa, get_mesas_estado
 from schemas import CerrarMesaRequest
 from auth import verify_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import anyio
 
 router = APIRouter()
 security = HTTPBearer()
@@ -32,4 +33,5 @@ async def get_mesas_estado(
     current_user: str = Depends(get_current_user)
 ):
     """Obtener estado de todas las mesas"""
-    return get_mesas_estado()
+    from services.mesa_service import get_mesas_estado as sync_get
+    return await anyio.to_thread.run_sync(sync_get)
