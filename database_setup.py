@@ -213,9 +213,11 @@ def create_mock_data():
         import random
         votos = []
         
+        # Contadores por circuito para generar comprobantes únicos
+        circuito_counters = {}
+        
         # Generar 100 votos con distribución realista
         for i in range(100):
-            cedula = f"{random.randint(10000000, 99999999)}"
             # Distribución de votos: 70% candidatos, 20% blanco (NULL), 10% anulado (es_anulado=True)
             rand = random.random()
             if rand < 0.7:
@@ -231,17 +233,17 @@ def create_mock_data():
             circuito_id = random.choice([1, 2, 3, 16, 17, 18, 26, 27, 28])
             es_observado = random.random() < 0.05  # 5% de votos observados
             
-            votos.append((cedula, candidato_id, circuito_id, es_observado, 'aprobado', es_anulado))
-        
-        # Agregar algunos votos específicos para testing
-        votos.extend([
-            ('87654321', 1, 1, False, 'aprobado', False),
-            ('88888888', 1, 2, False, 'aprobado', False),
-            ('12341234', 2, 3, False, 'aprobado', False),
-        ])
+            # Generar comprobante único para el circuito
+            if circuito_id not in circuito_counters:
+                circuito_counters[circuito_id] = 1
+            else:
+                circuito_counters[circuito_id] += 1
+            
+            numero_comprobante = f"C{circuito_id:03d}-{circuito_counters[circuito_id]:05d}"
+            votos.append((numero_comprobante, candidato_id, circuito_id, es_observado, 'aprobado', es_anulado))
         
         cursor.executemany(
-            "INSERT INTO votos (cedula, candidato_id, circuito_id, es_observado, estado_validacion, es_anulado, timestamp) VALUES (%s, %s, %s, %s, %s, %s, NOW())",
+            "INSERT INTO votos (numero_comprobante, candidato_id, circuito_id, es_observado, estado_validacion, es_anulado, timestamp) VALUES (%s, %s, %s, %s, %s, %s, NOW())",
             votos
         )
         print("✓ Votos de ejemplo creados")

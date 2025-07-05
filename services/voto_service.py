@@ -6,6 +6,36 @@ from dao.mesa_dao import MesaDAO
 from dao.votante_dao import VotanteDAO
 from dao.voto_dao import VotoDAO
 from schemas import VotoRequest, VotoResponse
+import random
+import string
+
+def generate_comprobante(circuito_id: int) -> str:
+    """Generar número de comprobante único para el circuito"""
+    with get_db_connection() as connection:
+        cursor = connection.cursor()
+        try:
+            # Obtener el último número secuencial para este circuito
+            query = """
+            SELECT numero_comprobante FROM votos 
+            WHERE circuito_id = %s AND numero_comprobante LIKE %s
+            ORDER BY id DESC LIMIT 1
+            """
+            pattern = f"C{circuito_id:03d}-%"
+            cursor.execute(query, (circuito_id, pattern))
+            result = cursor.fetchone()
+            
+            if result:
+                # Extraer el número secuencial del último comprobante
+                last_comprobante = result[0]
+                last_number = int(last_comprobante.split('-')[1])
+                next_number = last_number + 1
+            else:
+                # Primer voto del circuito
+                next_number = 1
+            
+            return f"C{circuito_id:03d}-{next_number:05d}"
+        finally:
+            cursor.close()
 
 def cast_vote(voto: VotoRequest, current_user: str) -> VotoResponse:
     """Registrar voto"""
@@ -22,11 +52,13 @@ def cast_vote(voto: VotoRequest, current_user: str) -> VotoResponse:
         if not auth_record or auth_record['estado'] != 'HABILITADA':
             raise HTTPException(status_code=403, detail="Votante no autorizado para votar")
         
-        # Verificar que no haya votado ya
-        existing_vote = VotoDAO.get_vote_by_cedula(connection, voto.cedula)
-        if existing_vote:
+        # Verificar que no haya votado ya (usando tabla autorizaciones)
+        if auth_record['estado'] == 'VOTÓ':
             raise HTTPException(status_code=400, detail="Esta cédula ya ha votado")
     
+        # Generar comprobante único
+        numero_comprobante = generate_comprobante(circuito_id)
+        
         # Determinar si es voto observado basado en la autorización especial
         es_observado = auth_record.get('es_autorizacion_especial', False)
         estado_validacion = 'pendiente' if es_observado else 'aprobado'
@@ -45,7 +77,7 @@ def cast_vote(voto: VotoRequest, current_user: str) -> VotoResponse:
             candidato_final = voto.candidato_id
         
         vote_data = {
-            'cedula': voto.cedula,
+            'numero_comprobante': numero_comprobante,
             'candidato_id': candidato_final,
             'timestamp': datetime.now(),
             'es_observado': es_observado,
@@ -58,7 +90,7 @@ def cast_vote(voto: VotoRequest, current_user: str) -> VotoResponse:
         # Actualizar estado de autorización
         VotanteDAO.update_authorization_status(connection, voto.cedula, 'VOTÓ', datetime.now())
     
-        mensaje = "Voto registrado exitosamente"
+        mensaje = f"Voto registrado exitosamente. Comprobante: {numero_comprobante}"
         if es_observado:
             mensaje += f" (VOTO OBSERVADO - Circuito credencial: {auth_record['circuito_id']}, Circuito mesa: {circuito_id})"
         
@@ -72,7 +104,7 @@ def get_observed_votes(circuito: str) -> list:
         return [
             {
                 "id": voto["id"],
-                "cedula": voto["cedula"],
+                "numero_comprobante": voto["numero_comprobante"],
                 "candidato_id": voto["candidato_id"],
                 "fecha_hora": voto["timestamp"].isoformat()
             }

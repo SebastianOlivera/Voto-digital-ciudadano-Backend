@@ -78,7 +78,7 @@ def create_tables():
         """
         CREATE TABLE IF NOT EXISTS votos (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            cedula VARCHAR(20) NOT NULL UNIQUE,
+            numero_comprobante VARCHAR(50) NOT NULL UNIQUE,
             candidato_id INT NULL,
             timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             es_observado BOOLEAN DEFAULT FALSE,

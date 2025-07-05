@@ -6,12 +6,12 @@ class VotoDAO:
     """Data Access Object para operaciones relacionadas con votos"""
     
     @staticmethod
-    def get_vote_by_cedula(connection: mysql.connector.MySQLConnection, cedula: str) -> Optional[Dict]:
-        """Verificar si ya existe voto para esta cédula"""
+    def get_vote_by_comprobante(connection: mysql.connector.MySQLConnection, numero_comprobante: str) -> Optional[Dict]:
+        """Verificar si ya existe voto para este comprobante"""
         cursor = connection.cursor(dictionary=True)
         try:
-            query = "SELECT * FROM votos WHERE cedula = %s"
-            cursor.execute(query, (cedula,))
+            query = "SELECT * FROM votos WHERE numero_comprobante = %s"
+            cursor.execute(query, (numero_comprobante,))
             return cursor.fetchone()
         finally:
             cursor.close()
@@ -22,8 +22,8 @@ class VotoDAO:
         cursor = connection.cursor()
         try:
             query = """
-            INSERT INTO votos (cedula, candidato_id, timestamp, es_observado, estado_validacion, circuito_id, es_anulado)
-            VALUES (%(cedula)s, %(candidato_id)s, %(timestamp)s, %(es_observado)s, %(estado_validacion)s, %(circuito_id)s, %(es_anulado)s)
+            INSERT INTO votos (numero_comprobante, candidato_id, timestamp, es_observado, estado_validacion, circuito_id, es_anulado)
+            VALUES (%(numero_comprobante)s, %(candidato_id)s, %(timestamp)s, %(es_observado)s, %(estado_validacion)s, %(circuito_id)s, %(es_anulado)s)
             """
             cursor.execute(query, vote_data)
             return cursor.lastrowid
@@ -36,7 +36,7 @@ class VotoDAO:
         cursor = connection.cursor(dictionary=True)
         try:
             query = """
-            SELECT id, cedula, candidato_id, timestamp
+            SELECT id, numero_comprobante, candidato_id, timestamp
             FROM votos 
             WHERE es_observado = TRUE AND estado_validacion = 'pendiente' AND circuito_id = %s
             """
