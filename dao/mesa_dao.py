@@ -71,10 +71,12 @@ class MesaDAO:
                     ELSE 'abierta'
                 END as estado,
                 (SELECT COUNT(*) FROM credenciales_autorizadas ca WHERE ca.circuito_id = c.id) as votantes_autorizados,
-                NOW() as ultima_actividad
+                MAX(u.fecha_cierre) as fecha_cierre,
+                COUNT(v.id) as votos_emitidos
             FROM circuitos c
             LEFT JOIN establecimientos e ON c.establecimiento_id = e.id
             LEFT JOIN usuarios u ON u.circuito_id = c.id
+            LEFT JOIN votos v ON v.circuito_id = c.id
             GROUP BY c.id, c.numero_circuito, e.nombre, e.departamento
             ORDER BY c.numero_circuito
             """

@@ -64,3 +64,49 @@ class ValidarVotoRequest(BaseModel):
 
 class CerrarMesaRequest(BaseModel):
     circuito: str
+
+# Esquemas para crear entidades
+class CreateUsuarioRequest(BaseModel):
+    username: str
+    password: str
+    circuito_id: int
+    role: str  # "mesa" o "presidente"
+
+class CreateEstablecimientoRequest(BaseModel):
+    nombre: str
+    departamento: str
+    ciudad: str
+    zona: Optional[str] = None
+    barrio: Optional[str] = None
+    direccion: str
+    tipo_establecimiento: str
+    accesible: bool = True
+
+class CreateEleccionRequest(BaseModel):
+    año: int
+    listas: List['CreateListaRequest']
+
+class CreateListaRequest(BaseModel):
+    candidato: str
+    vicepresidente: str
+    numero_lista: int
+    partido: str
+
+class CreateCircuitoRequest(BaseModel):
+    numero_circuito: str
+    numero_mesa: str
+    establecimiento_id: int
+
+# Response schemas
+class UsuarioCreatedResponse(BaseModel):
+    id: int
+    username: str
+    circuito_id: int
+    role: str
+    mensaje: str
+
+class EstablecimientoCreatedResponse(BaseModel):
+    id: int
+    nombre: str
+    departamento: str
+    mensaje: str

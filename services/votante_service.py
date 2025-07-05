@@ -11,6 +11,17 @@ def enable_voter(request: VoteEnableRequest, current_user: str) -> dict:
         # Para votos observados, usar la cédula real del votante
         cedula_a_autorizar = request.cedula_real if request.esEspecial and request.cedula_real else request.credencial
         
+        # Obtener el ID real del circuito a partir del número de circuito
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT id FROM circuitos WHERE numero_circuito = %s", (request.circuito,))
+        circuito_db = cursor.fetchone()
+        cursor.close()
+        
+        if not circuito_db:
+            raise HTTPException(status_code=400, detail=f"Circuito {request.circuito} no encontrado")
+        
+        circuito_id = circuito_db['id']
+        
         # Verificar si ya está autorizado
         existing_auth = VotanteDAO.get_authorization(connection, cedula_a_autorizar)
         
@@ -36,7 +47,7 @@ def enable_voter(request: VoteEnableRequest, current_user: str) -> dict:
         # Crear nueva autorización
         auth_data = {
             'cedula': cedula_a_autorizar,
-            'circuito_id': int(request.circuito),
+            'circuito_id': circuito_id,
             'estado': 'HABILITADA',
             'autorizado_por': current_user,
             'fecha_autorizacion': datetime.now(),
@@ -56,7 +67,17 @@ def enable_voter(request: VoteEnableRequest, current_user: str) -> dict:
 def get_voter_status(circuito: str, cedula: str) -> VotanteStatus:
     """Verificar estado de votante"""
     with get_db_connection() as connection:
-        auth_record = VotanteDAO.get_authorization(connection, cedula, int(circuito))
+        # Obtener el ID real del circuito a partir del número de circuito
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT id FROM circuitos WHERE numero_circuito = %s", (circuito,))
+        circuito_db = cursor.fetchone()
+        cursor.close()
+        
+        if not circuito_db:
+            raise HTTPException(status_code=404, detail=f"Circuito {circuito} no encontrado")
+        
+        circuito_id = circuito_db['id']
+        auth_record = VotanteDAO.get_authorization(connection, cedula, circuito_id)
         
         if not auth_record:
             raise HTTPException(status_code=404, detail="Votante no encontrado o no autorizado")
@@ -73,5 +94,15 @@ def get_voter_status(circuito: str, cedula: str) -> VotanteStatus:
 def get_voters_by_circuit(circuito: str) -> list:
     """Listar votantes por circuito"""
     with get_db_connection() as connection:
-        votantes = VotanteDAO.get_voters_by_circuit(connection, int(circuito))
+        # Obtener el ID real del circuito a partir del número de circuito
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT id FROM circuitos WHERE numero_circuito = %s", (circuito,))
+        circuito_db = cursor.fetchone()
+        cursor.close()
+        
+        if not circuito_db:
+            return []
+        
+        circuito_id = circuito_db['id']
+        votantes = VotanteDAO.get_voters_by_circuit(connection, circuito_id)
         return [{"cedula": v["cedula"], "estado": v["estado"], "fecha_autorizacion": v["fecha_autorizacion"]} for v in votantes]

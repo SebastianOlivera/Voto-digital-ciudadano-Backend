@@ -49,6 +49,14 @@ def update_database_structure():
             print("Agregando columna 'role'...")
             cursor.execute("ALTER TABLE usuarios ADD COLUMN role VARCHAR(20) DEFAULT 'mesa'")
         
+        if 'mesa_cerrada' not in columns:
+            print("Agregando columna 'mesa_cerrada'...")
+            cursor.execute("ALTER TABLE usuarios ADD COLUMN mesa_cerrada BOOLEAN DEFAULT FALSE")
+        
+        if 'fecha_cierre' not in columns:
+            print("Agregando columna 'fecha_cierre'...")
+            cursor.execute("ALTER TABLE usuarios ADD COLUMN fecha_cierre DATETIME NULL")
+        
         # Verificar si las columnas ya existen en votos
         cursor.execute("DESCRIBE votos")
         voto_columns = [column[0] for column in cursor.fetchall()]
@@ -72,6 +80,39 @@ def update_database_structure():
         if 'es_autorizacion_especial' not in auth_columns:
             print("Agregando columna 'es_autorizacion_especial'...")
             cursor.execute("ALTER TABLE autorizaciones ADD COLUMN es_autorizacion_especial BOOLEAN DEFAULT FALSE")
+        
+        # Crear tablas de elecciones y listas si no existen
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS elecciones (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            año INT NOT NULL UNIQUE,
+            fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS listas_electorales (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            numero_lista INT NOT NULL,
+            candidato_presidente_id INT,
+            candidato_vicepresidente_id INT,
+            partido_id INT,
+            eleccion_id INT,
+            FOREIGN KEY (candidato_presidente_id) REFERENCES candidatos(id),
+            FOREIGN KEY (candidato_vicepresidente_id) REFERENCES candidatos(id),
+            FOREIGN KEY (partido_id) REFERENCES partidos(id),
+            FOREIGN KEY (eleccion_id) REFERENCES elecciones(id),
+            UNIQUE KEY unique_lista_eleccion (numero_lista, eleccion_id)
+        )
+        """)
+        
+        # Agregar columna es_presidente a candidatos si no existe
+        cursor.execute("DESCRIBE candidatos")
+        candidato_columns = [column[0] for column in cursor.fetchall()]
+        
+        if 'es_presidente' not in candidato_columns:
+            print("Agregando columna 'es_presidente' a candidatos...")
+            cursor.execute("ALTER TABLE candidatos ADD COLUMN es_presidente BOOLEAN DEFAULT TRUE")
         
         conn.commit()
         print("✅ Estructura de base de datos actualizada exitosamente!")
@@ -311,6 +352,12 @@ def main():
         
         if 'role' not in columns:
             cursor.execute("ALTER TABLE usuarios ADD COLUMN role VARCHAR(20) DEFAULT 'mesa'")
+        
+        if 'mesa_cerrada' not in columns:
+            cursor.execute("ALTER TABLE usuarios ADD COLUMN mesa_cerrada BOOLEAN DEFAULT FALSE")
+        
+        if 'fecha_cierre' not in columns:
+            cursor.execute("ALTER TABLE usuarios ADD COLUMN fecha_cierre DATETIME NULL")
         
         # Verificar si las columnas ya existen en votos
         cursor.execute("DESCRIBE votos")
