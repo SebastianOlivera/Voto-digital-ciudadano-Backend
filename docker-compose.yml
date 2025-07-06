@@ -24,13 +24,13 @@ services:
       mysql:
         condition: service_healthy
     environment:
-      - DATABASE_URL=mysql+mysqlconnector://user:password@mysql:3306/voting_db
+      - DATABASE_URL=mysql+mysqlconnector://fv_g4_admin:Bd2025!@mysql.reto-ucu.net:50006/FV_Grupo4
       - SECRET_KEY=clavesecreta1
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USER=user
-      - DB_PASSWORD=password
-      - DB_NAME=voting_db
+      - DB_HOST=mysql.reto-ucu.net
+      - DB_PORT=50006
+      - DB_USER=fv_g4_admin
+      - DB_PASSWORD=Bd2025!
+      - DB_NAME=FV_Grupo4
 
 volumes:
   mysql_data:

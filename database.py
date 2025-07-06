@@ -1,7 +1,9 @@
+from dotenv import load_dotenv
 import mysql.connector.pooling
 import os
 from contextlib import contextmanager
 from typing import Generator
+load_dotenv()
 
 # Configuración del pool de conexiones
 POOL_CONFIG = {
