@@ -1,11 +1,13 @@
+from dotenv import load_dotenv
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
 import os
+load_dotenv()
 
 # Configuración de seguridad
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here-change-in-production")
+SECRET_KEY = os.getenv("SECRET_KEY", "secret")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -15,9 +17,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verificar contraseña"""
     return pwd_context.verify(plain_password, hashed_password)
 
-def get_password_hash(password: str) -> str:
+    """ def get_password_hash(password: str) -> str: """
     """Generar hash de contraseña"""
-    return pwd_context.hash(password)
+    """ return pwd_context.hash(password) """
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Crear token JWT"""
