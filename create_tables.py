@@ -26,7 +26,6 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS circuitos (
             id INT AUTO_INCREMENT PRIMARY KEY,
             numero_circuito VARCHAR(50) NOT NULL UNIQUE,
-            numero_mesa VARCHAR(10),
             establecimiento_id INT NOT NULL,
             FOREIGN KEY (establecimiento_id) REFERENCES establecimientos(id)
         )
@@ -47,8 +46,7 @@ def create_tables():
         """
         CREATE TABLE IF NOT EXISTS partidos (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            nombre VARCHAR(255) NOT NULL UNIQUE,
-            color VARCHAR(7)
+            nombre VARCHAR(255) NOT NULL UNIQUE
         )
         """,
         """

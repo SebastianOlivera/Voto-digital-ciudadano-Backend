@@ -77,7 +77,12 @@ def get_voter_status(circuito: str, credencial: str) -> VotanteStatus:
             raise HTTPException(status_code=404, detail=f"Circuito {circuito} no encontrado")
         
         circuito_id = circuito_db['id']
+        # Primero buscar por circuito específico
         auth_record = VotanteDAO.get_authorization(connection, credencial, circuito_id)
+        
+        # Si no se encuentra, buscar sin filtro de circuito (para votos observados)
+        if not auth_record:
+            auth_record = VotanteDAO.get_authorization(connection, credencial)
         
         if not auth_record:
             raise HTTPException(status_code=404, detail="Votante no encontrado o no autorizado")

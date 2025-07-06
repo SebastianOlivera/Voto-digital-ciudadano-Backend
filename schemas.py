@@ -26,6 +26,7 @@ class LoginResponse(BaseModel):
     circuito: Optional[CircuitoInfo]
     username: str
     role: str
+    mesa_cerrada: bool = False
 
 class CandidatoResponse(BaseModel):
     id: int
@@ -35,7 +36,6 @@ class CandidatoResponse(BaseModel):
 class PartidoResponse(BaseModel):
     partido: str
     candidatos: List[CandidatoResponse]
-    color: Optional[str] = None
 
 # Esquemas de request
 class VoteEnableRequest(BaseModel):
@@ -95,11 +95,9 @@ class CreateListaRequest(BaseModel):
 
 class CreatePartidoRequest(BaseModel):
     nombre: str
-    color: str  # Formato hex como #FF0000
 
 class CreateCircuitoRequest(BaseModel):
     numero_circuito: str
-    numero_mesa: str
     establecimiento_id: int
 
 # Response schemas
@@ -113,7 +111,6 @@ class UsuarioCreatedResponse(BaseModel):
 class PartidoCreatedResponse(BaseModel):
     id: int
     nombre: str
-    color: str
     mensaje: str
 
 class EstablecimientoCreatedResponse(BaseModel):

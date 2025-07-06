@@ -34,16 +34,14 @@ def authenticate_user(username: str, password: str) -> LoginResponse:
                 detail="Credenciales incorrectas"
             )
         
-        # Obtener información completa del circuito y establecimiento
+        # Obtener información del circuito solo para usuarios que no sean superadmin
         circuito_info = None
-        circuito_id_to_use = user['circuito_id']
         
-        # Para superadmin, usar circuito 1 por defecto
-        if user['role'] == 'superadmin' and not circuito_id_to_use:
-            circuito_id_to_use = 1
-        
-        if circuito_id_to_use:
-            # Los datos del circuito y establecimiento ya vienen en el user del DAO
+        # Superadmin no requiere información de circuito
+        if user['role'] == 'superadmin':
+            print(f"DEBUG: Usuario superadmin '{username}' autenticado, no requiere circuito")
+        elif user['circuito_id'] and user['numero_circuito']:
+            # Solo usuarios normales necesitan información completa del circuito
             circuito_info = CircuitoInfo(
                 id=user['circuito_id'],
                 numero_circuito=user['numero_circuito'],
@@ -59,6 +57,8 @@ def authenticate_user(username: str, password: str) -> LoginResponse:
                     accesible=user['accesible']
                 )
             )
+        else:
+            print(f"DEBUG: Usuario de mesa sin información de circuito válida")
         
         access_token = auth.create_access_token(data={"sub": user['username']})
         return LoginResponse(
@@ -66,5 +66,6 @@ def authenticate_user(username: str, password: str) -> LoginResponse:
             token_type="bearer",
             circuito=circuito_info,
             username=user['username'],
-            role=user.get('role', 'mesa')
+            role=user.get('role', 'mesa'),
+            mesa_cerrada=user.get('mesa_cerrada', False)
         )

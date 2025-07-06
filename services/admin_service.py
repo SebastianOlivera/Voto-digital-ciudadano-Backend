@@ -57,22 +57,18 @@ def create_establecimiento(data: CreateEstablecimientoRequest) -> dict:
         return {"error": f"Error creando establecimiento: {str(e)}"}
 
 def create_eleccion(data: CreateEleccionRequest) -> dict:
-    """Crear nueva elección con listas"""
+    """Crear nueva elección con listas - FULL WIPE del sistema"""
     try:
         with get_db_connection() as connection:
-            # Verificar que no exista una elección para ese año
-            cursor = connection.cursor()
-            cursor.execute("SELECT id FROM elecciones WHERE año = %s", (data.año,))
-            if cursor.fetchone():
-                cursor.close()
-                return {"error": f"Ya existe una elección para el año {data.año}"}
-            cursor.close()
+            print(f"🧹 Iniciando FULL WIPE para crear elección {data.año}")
             
             success = AdminDAO.create_eleccion(connection, data.dict())
             if success:
                 connection.commit()
-                return {"mensaje": f"Elección {data.año} creada exitosamente con {len(data.listas)} listas"}
+                print(f"✅ FULL WIPE completado - Elección {data.año} creada")
+                return {"mensaje": f"Elección {data.año} creada exitosamente con {len(data.listas)} listas (sistema limpiado completamente)"}
             else:
+                connection.rollback()
                 return {"error": "Error creando la elección"}
             
     except Exception as e:
@@ -139,7 +135,6 @@ def create_partido(data: CreatePartidoRequest) -> dict:
             return {
                 "id": partido["id"],
                 "nombre": partido["nombre"],
-                "color": partido["color"],
                 "mensaje": f"Partido '{partido['nombre']}' creado exitosamente"
             }
     except ValueError as e:

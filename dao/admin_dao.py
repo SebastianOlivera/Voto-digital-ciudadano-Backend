@@ -56,11 +56,42 @@ class AdminDAO:
     
     @staticmethod
     def create_eleccion(connection: mysql.connector.MySQLConnection, eleccion_data: Dict) -> bool:
-        """Crear nueva elección con sus listas"""
+        """Crear nueva elección con sus listas - FULL WIPE de todos los datos excepto admin"""
         cursor = connection.cursor()
         try:
-            # Desactivar elección anterior
-            cursor.execute("UPDATE elecciones SET activa = FALSE")
+            # FULL WIPE - Limpiar todos los datos previos (excepto admin) en orden correcto
+            print("🧹 Iniciando limpieza completa de datos...")
+            
+            # Deshabilitar foreign key checks temporalmente para facilitar la limpieza
+            cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+            
+            # 1. Limpiar votos y autorizaciones (sin dependencias)
+            cursor.execute("DELETE FROM votos")
+            cursor.execute("DELETE FROM autorizaciones") 
+            cursor.execute("DELETE FROM credenciales_autorizadas")
+            print("✓ Votos, autorizaciones y credenciales limpiadas")
+            
+            # 2. Limpiar usuarios (excepto admin) - preservar admin por username y role
+            cursor.execute("DELETE FROM usuarios WHERE role != 'superadmin' AND username != 'admin'")
+            print("✓ Usuarios de mesa y presidente eliminados (admin preservado)")
+            
+            # 3. Limpiar candidatos y elecciones anteriores
+            cursor.execute("DELETE FROM candidatos")
+            cursor.execute("DELETE FROM elecciones")
+            print("✓ Candidatos y elecciones anteriores eliminadas")
+            
+            # 4. Limpiar circuitos (dependen de establecimientos)
+            cursor.execute("DELETE FROM circuitos")
+            print("✓ Circuitos eliminados")
+            
+            # 5. Limpiar establecimientos
+            cursor.execute("DELETE FROM establecimientos")
+            print("✓ Establecimientos eliminados")
+            
+            # Reactivar foreign key checks
+            cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+            
+            print("🎯 Limpieza completa finalizada - Sistema completamente limpio")
             
             # Crear nueva elección
             eleccion_query = """
@@ -74,6 +105,7 @@ class AdminDAO:
                 datetime.now()
             ))
             eleccion_id = cursor.lastrowid
+            print(f"✓ Nueva elección {eleccion_data['año']} creada con ID {eleccion_id}")
             
             # Crear candidatos para cada lista
             for lista in eleccion_data['listas']:
@@ -116,7 +148,7 @@ class AdminDAO:
         cursor = connection.cursor(dictionary=True)
         try:
             query = """
-            SELECT id, nombre, color
+            SELECT id, nombre
             FROM partidos
             ORDER BY nombre
             """
@@ -138,8 +170,8 @@ class AdminDAO:
             
             # Crear el partido
             query = """
-            INSERT INTO partidos (nombre, color) 
-            VALUES (%(nombre)s, %(color)s)
+            INSERT INTO partidos (nombre) 
+            VALUES (%(nombre)s)
             """
             cursor.execute(query, partido_data)
             partido_id = cursor.lastrowid
@@ -154,12 +186,11 @@ class AdminDAO:
         cursor = connection.cursor()
         try:
             query = """
-            INSERT INTO circuitos (numero_circuito, numero_mesa, establecimiento_id)
-            VALUES (%s, %s, %s)
+            INSERT INTO circuitos (numero_circuito, establecimiento_id)
+            VALUES (%s, %s)
             """
             cursor.execute(query, (
                 circuito_data['numero_circuito'],
-                circuito_data['numero_mesa'],
                 circuito_data['establecimiento_id']
             ))
             return cursor.lastrowid
@@ -187,7 +218,7 @@ class AdminDAO:
         cursor = connection.cursor(dictionary=True)
         try:
             query = """
-            SELECT c.id, c.numero_circuito, c.numero_mesa, 
+            SELECT c.id, c.numero_circuito, 
                    e.nombre as establecimiento
             FROM circuitos c
             JOIN establecimientos e ON c.establecimiento_id = e.id

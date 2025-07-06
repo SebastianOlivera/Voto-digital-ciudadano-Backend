@@ -28,7 +28,7 @@ class CandidatoDAO:
             query = """
             SELECT c.id, c.nombre as candidato_nombre, c.orden_lista,
                    c.es_presidente, c.numero_lista,
-                   p.nombre as partido_nombre, p.color as partido_color
+                   p.nombre as partido_nombre
             FROM candidatos c
             JOIN partidos p ON c.partido_id = p.id
             WHERE c.eleccion_id = %s

@@ -7,18 +7,19 @@ class MesaDAO:
     
     @staticmethod
     def get_by_username(connection: mysql.connector.MySQLConnection, username: str) -> Optional[Dict]:
-        """Obtener usuario de mesa por username"""
+        """Obtener usuario por username (funciona para admin y usuarios de mesa)"""
         cursor = connection.cursor(dictionary=True)
         try:
             query = """
             SELECT u.id, u.username, u.password_hash, u.circuito_id, u.role,
+                   u.mesa_cerrada, u.fecha_cierre,
                    c.numero_circuito, 
                    e.id as establecimiento_id, e.nombre as establecimiento_nombre,
                    e.departamento, e.ciudad, e.zona, e.barrio, e.direccion,
                    e.tipo_establecimiento, e.accesible
             FROM usuarios u
-            JOIN circuitos c ON u.circuito_id = c.id
-            JOIN establecimientos e ON c.establecimiento_id = e.id
+            LEFT JOIN circuitos c ON u.circuito_id = c.id
+            LEFT JOIN establecimientos e ON c.establecimiento_id = e.id
             WHERE u.username = %s
             """
             cursor.execute(query, (username,))
@@ -78,7 +79,7 @@ class MesaDAO:
             LEFT JOIN usuarios u ON u.circuito_id = c.id
             LEFT JOIN votos v ON v.circuito_id = c.id
             GROUP BY c.id, c.numero_circuito, e.nombre, e.departamento
-            ORDER BY c.numero_circuito
+            ORDER BY CAST(c.numero_circuito AS UNSIGNED)
             """
             cursor.execute(query)
             return cursor.fetchall()

@@ -17,30 +17,35 @@ def get_candidates() -> List[PartidoResponse]:
         
         candidatos = CandidatoDAO.get_all_with_parties_by_election(connection, eleccion_activa['id'])
 
-        # Agrupar por partido y número de lista para combinar presidente y vicepresidente
-        partidos_dict: Dict[str, Dict[int, Dict[str, any]]] = {}
+        # Agrupar candidatos por partido
+        partidos_info = {}  # {partido_nombre: {'listas': {numero_lista: datos}}}
+        
         for candidato in candidatos:
             partido = candidato['partido_nombre']
             numero_lista = candidato.get('numero_lista')
-            if partido not in partidos_dict:
-                partidos_dict[partido] = {'color': candidato.get('partido_color')}
-            if numero_lista not in partidos_dict[partido]:
-                partidos_dict[partido][numero_lista] = {
+            
+            if partido not in partidos_info:
+                partidos_info[partido] = {
+                    'listas': {}
+                }
+            
+            if numero_lista not in partidos_info[partido]['listas']:
+                partidos_info[partido]['listas'][numero_lista] = {
                     'id': None,
                     'presidente': '',
                     'vicepresidente': ''
                 }
 
             if candidato.get('es_presidente'):
-                partidos_dict[partido][numero_lista]['id'] = candidato['id']
-                partidos_dict[partido][numero_lista]['presidente'] = candidato['candidato_nombre']
+                partidos_info[partido]['listas'][numero_lista]['id'] = candidato['id']
+                partidos_info[partido]['listas'][numero_lista]['presidente'] = candidato['candidato_nombre']
             else:
-                partidos_dict[partido][numero_lista]['vicepresidente'] = candidato['candidato_nombre']
+                partidos_info[partido]['listas'][numero_lista]['vicepresidente'] = candidato['candidato_nombre']
 
         result: List[PartidoResponse] = []
-        for partido, listas in partidos_dict.items():
+        for partido, info in partidos_info.items():
             candidatos_list: List[CandidatoResponse] = []
-            for numero_lista, datos in listas.items():
+            for numero_lista, datos in info['listas'].items():
                 nombre = datos['presidente']
                 if datos['vicepresidente']:
                     nombre = f"{datos['presidente']} - {datos['vicepresidente']}"
@@ -53,8 +58,7 @@ def get_candidates() -> List[PartidoResponse]:
                 )
             result.append(PartidoResponse(
                 partido=partido, 
-                candidatos=candidatos_list,
-                color=listas.get('color')
+                candidatos=candidatos_list
             ))
 
         return result

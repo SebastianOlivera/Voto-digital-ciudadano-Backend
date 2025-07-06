@@ -5,6 +5,14 @@ from dao.resultado_dao import ResultadoDAO
 def get_results(departamento: Optional[str] = None) -> dict:
     """Obtener resultados de votación"""
     with get_db_connection() as connection:
+        # Obtener información de la elección activa
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT año FROM elecciones WHERE activa = TRUE LIMIT 1")
+        eleccion_activa = cursor.fetchone()
+        cursor.close()
+        
+        año_eleccion = eleccion_activa['año'] if eleccion_activa else 2024
+        
         # Obtener votos por candidato
         resultados_raw = ResultadoDAO.get_votes_by_candidate(connection, departamento)
         resultados = [{"candidato": r["candidato"], "partido": r["partido"], "votos": r["votos"]} for r in resultados_raw]
@@ -30,7 +38,8 @@ def get_results(departamento: Optional[str] = None) -> dict:
             "votos_observados": votos_observados,
             "mesas_cerradas": mesas_cerradas,
             "total_mesas": total_mesas,
-            "departamento": departamento
+            "departamento": departamento,
+            "año_eleccion": año_eleccion
         }
 
 def get_departments() -> list:
@@ -48,5 +57,8 @@ def get_circuit_results(circuito: str) -> dict:
 
 def search_circuits(search_term: str) -> list:
     """Buscar circuitos por número"""
+    print(f"🔍 Servicio: Buscando circuitos con término: '{search_term}'")
     with get_db_connection() as connection:
-        return ResultadoDAO.search_circuits(connection, search_term)
+        result = ResultadoDAO.search_circuits(connection, search_term)
+        print(f"🔍 Servicio: Resultado obtenido: {result}")
+        return result

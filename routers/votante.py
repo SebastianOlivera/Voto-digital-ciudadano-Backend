@@ -19,14 +19,6 @@ async def enable_vote(
     """Autorizar votante - solo mesa autenticada"""
     return enable_voter(request, current_user)
 
-@router.get("/{circuito}/{credencial}", response_model=VotanteStatus)
-async def get_votante(
-    circuito: str,
-    credencial: str
-):
-    """Verificar estado de votante - no requiere auth para cabina"""
-    return get_voter_status(circuito, credencial)
-
 @router.get("/{circuito}")
 async def get_votantes_por_circuito(
     circuito: str,
@@ -34,3 +26,11 @@ async def get_votantes_por_circuito(
 ):
     """Listar votantes por circuito - solo para mesa autenticada"""
     return get_voters_by_circuit(circuito)
+
+@router.get("/{circuito}/{credencial}", response_model=VotanteStatus)
+async def get_votante(
+    circuito: str,
+    credencial: str
+):
+    """Verificar estado de votante - no requiere auth para cabina"""
+    return get_voter_status(circuito, credencial)

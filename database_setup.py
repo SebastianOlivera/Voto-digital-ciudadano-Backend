@@ -2,6 +2,7 @@ import mysql.connector
 from passlib.context import CryptContext
 from datetime import datetime
 import os
+import random
 
 # Configuración de la base de datos
 DATABASE_CONFIG = {
@@ -69,9 +70,6 @@ def update_database_structure():
             print("Agregando columna 'estado_validacion'...")
             cursor.execute("ALTER TABLE votos ADD COLUMN estado_validacion VARCHAR(20) DEFAULT 'aprobado'")
             
-        if 'circuito_mesa' not in voto_columns:
-            print("Agregando columna 'circuito_mesa'...")
-            cursor.execute("ALTER TABLE votos ADD COLUMN circuito_mesa VARCHAR(10) NULL")
         
         # Verificar si las columnas ya existen en autorizaciones
         cursor.execute("DESCRIBE autorizaciones")
@@ -107,10 +105,6 @@ def update_database_structure():
             print("Agregando columna 'eleccion_id' a candidatos...")
             cursor.execute("ALTER TABLE candidatos ADD COLUMN eleccion_id INT")
             
-        # Agregar columna color a partidos si no existe
-        cursor.execute("DESCRIBE partidos")
-        partido_columns = [column[0] for column in cursor.fetchall()]
-        
         # Eliminar logo_url de partidos si existe
         cursor.execute("DESCRIBE partidos")
         partido_columns = [column[0] for column in cursor.fetchall()]
@@ -119,9 +113,10 @@ def update_database_structure():
             print("Eliminando columna 'logo_url' de partidos...")
             cursor.execute("ALTER TABLE partidos DROP COLUMN logo_url")
 
-        if 'color' not in partido_columns:
-            print("Agregando columna 'color' a partidos...")
-            cursor.execute("ALTER TABLE partidos ADD COLUMN color VARCHAR(7)")
+        # Eliminar columna color de partidos si existe
+        if 'color' in partido_columns:
+            print("Eliminando columna 'color' de partidos...")
+            cursor.execute("ALTER TABLE partidos DROP COLUMN color")
             
         if 'activa' not in partido_columns:
             print("Agregando columna 'activa' a elecciones...")
@@ -151,6 +146,7 @@ def create_mock_data():
         cursor.execute("DELETE FROM autorizaciones") 
         cursor.execute("DELETE FROM usuarios")
         cursor.execute("DELETE FROM candidatos")
+        cursor.execute("DELETE FROM elecciones")
         cursor.execute("DELETE FROM partidos")
         cursor.execute("DELETE FROM circuitos")
         cursor.execute("DELETE FROM establecimientos")
@@ -190,23 +186,37 @@ def create_mock_data():
         )
         print("✓ Establecimientos creados")
         
-        # 2. Crear circuitos
+        # 2. Crear circuitos (secuencia completa para testing)
         circuitos = [
-            ('001', 'A', 1), ('002', 'B', 1), ('003', 'C', 1),
-            ('004', 'A', 2), ('005', 'B', 2), ('006', 'A', 3),
-            ('007', 'A', 4), ('008', 'B', 4), ('009', 'A', 5),
-            ('010', 'A', 5),  # Added missing circuit 010
-            ('016', 'A', 6), ('017', 'B', 6), ('018', 'A', 7),
-            ('019', 'A', 8), ('020', 'A', 9), ('026', 'A', 10),
-            ('027', 'A', 11), ('028', 'A', 12), ('036', 'A', 13),
-            ('037', 'A', 14), ('041', 'A', 15), ('042', 'A', 16),
-            ('051', 'A', 17), ('052', 'A', 18), ('061', 'A', 19),
-            ('062', 'A', 20), ('071', 'A', 21), ('072', 'A', 22),
-            ('081', 'A', 23), ('091', 'A', 24),
+            # Montevideo - Establecimientos 1-5
+            ('1', 1), ('2', 1), ('3', 1),
+            ('4', 2), ('5', 2), ('6', 2),
+            ('7', 3), ('8', 3), ('9', 3),
+            ('10', 4), ('11', 4), ('12', 4),
+            ('13', 5), ('14', 5), ('15', 5),
+            # Canelones - Establecimientos 6-9
+            ('16', 6), ('17', 6), ('18', 7),
+            ('19', 8), ('20', 9),
+            # Maldonado - Establecimientos 10-12
+            ('21', 10), ('22', 11), ('23', 12),
+            # Colonia - Establecimientos 13-14
+            ('24', 13), ('25', 14),
+            # Rocha - Establecimientos 15-16
+            ('26', 15), ('27', 16),
+            # Rivera - Establecimientos 17-18
+            ('28', 17), ('29', 18),
+            # Salto - Establecimientos 19-20
+            ('30', 19), ('31', 20),
+            # Paysandú - Establecimientos 21-22
+            ('32', 21), ('33', 22),
+            # Soriano - Establecimiento 23
+            ('34', 23),
+            # Tacuarembó - Establecimiento 24
+            ('35', 24),
         ]
         
         cursor.executemany(
-            "INSERT INTO circuitos (numero_circuito, numero_mesa, establecimiento_id) VALUES (%s, %s, %s)",
+            "INSERT INTO circuitos (numero_circuito, establecimiento_id) VALUES (%s, %s)",
             circuitos
         )
         print("✓ Circuitos creados")
@@ -217,12 +227,12 @@ def create_mock_data():
         
         # Agregar credenciales específicas por circuito
         credenciales_por_circuito = [
-            # Circuito 001
-            ('ABC001001', 1), ('ABC001002', 1), ('ABC001003', 1), ('ABC001004', 1), ('ABC001005', 1),
-            # Circuito 002
-            ('ABC002001', 2), ('ABC002002', 2), ('ABC002003', 2), ('ABC002004', 2), ('ABC002005', 2),
-            # Circuito 003
-            ('ABC003001', 3), ('ABC003002', 3), ('ABC003003', 3), ('ABC003004', 3), ('ABC003005', 3),
+            # Circuito 1
+            ('ABC1001', 1), ('ABC1002', 1), ('ABC1003', 1), ('ABC1004', 1), ('ABC1005', 1),
+            # Circuito 2
+            ('ABC2001', 2), ('ABC2002', 2), ('ABC2003', 2), ('ABC2004', 2), ('ABC2005', 2),
+            # Circuito 3
+            ('ABC3001', 3), ('ABC3002', 3), ('ABC3003', 3), ('ABC3004', 3), ('ABC3005', 3),
         ]
         
         cursor.executemany(
@@ -231,57 +241,79 @@ def create_mock_data():
         )
         print("✓ Credenciales específicas por circuito creadas")
         
-        # 3. Crear partidos con colores
+        # 3. Crear partidos
         partidos_data = [
-            ('Frente Amplio', '#87CEFA'),  # Azul claro
-            ('Partido Nacional', '#87CEEB'),  # Celeste
-            ('Partido Colorado', '#FFB6C1'),  # Rojo claro
-            ('Cabildo Abierto', '#DDA0DD'),  # Púrpura claro
-            ('Partido Independiente', '#98FB98')  # Verde claro
+            ('Frente Amplio',),
+            ('Partido Nacional',),
+            ('Partido Colorado',),
+            ('Cabildo Abierto',),
+            ('Partido Independiente',)
         ]
-        cursor.executemany("INSERT INTO partidos (nombre, color) VALUES (%s, %s)", partidos_data)
-        print("✓ Partidos con colores creados")
+        cursor.executemany("INSERT INTO partidos (nombre) VALUES (%s)", partidos_data)
+        print("✓ Partidos creados")
         
-        # 4. Crear usuarios con hash correcto
+        # 4. Crear elección activa
+        cursor.execute("INSERT INTO elecciones (año, activa) VALUES (2024, TRUE)")
+        eleccion_id = cursor.lastrowid
+        print("✓ Elección 2024 creada y marcada como activa")
+        
+        # 5. Crear candidatos para la elección
+        candidatos_data = [
+            ('Juan Pérez', 1, True, 501, eleccion_id),     # Frente Amplio
+            ('María González', 2, True, 15, eleccion_id),   # Partido Nacional  
+            ('Carlos López', 3, True, 25, eleccion_id),     # Partido Colorado
+            ('Ana Rodríguez', 4, True, 71, eleccion_id),   # Cabildo Abierto
+            ('Luis Martínez', 5, True, 77, eleccion_id),   # Partido Independiente
+        ]
+        
+        cursor.executemany(
+            "INSERT INTO candidatos (nombre, partido_id, es_presidente, numero_lista, eleccion_id) VALUES (%s, %s, %s, %s, %s)",
+            candidatos_data
+        )
+        print("✓ Candidatos presidenciales creados")
+        
+        # 6. Crear usuarios mock (solo mesa y presidente)
         password_hash = pwd_context.hash("password123")
         usuarios = [
-            ("mesa001", password_hash, True, 1, "mesa"),
-            ("mesa002", password_hash, True, 2, "mesa"),
-            ("mesa003", password_hash, True, 3, "mesa"),
-            ("presidente001", password_hash, True, 1, "presidente"),
-            ("presidente002", password_hash, True, 2, "presidente"),
-            ("presidente003", password_hash, True, 3, "presidente"),
-            ("admin", password_hash, True, 1, "superadmin"),
+            ("mesa1", password_hash, True, 1, "mesa"),
+            ("mesa2", password_hash, True, 2, "mesa"),
+            ("mesa3", password_hash, True, 3, "mesa"),
+            ("presidente1", password_hash, True, 1, "presidente"),
+            ("presidente2", password_hash, True, 2, "presidente"),
+            ("presidente3", password_hash, True, 3, "presidente"),
         ]
         
         cursor.executemany(
             "INSERT INTO usuarios (username, password_hash, is_active, circuito_id, role) VALUES (%s, %s, %s, %s, %s)",
             usuarios
         )
-        print("✓ Usuarios creados")
+        print("✓ Usuarios mock creados (mesa y presidente)")
         
-        # 5. Generar algunos votos de ejemplo (sin candidatos específicos)
-        # Generar algunos votos de ejemplo con candidatos genéricos
+        # 7. Generar votos con distribución realista para la elección
         votos = []
         
         # Contadores por circuito para generar comprobantes únicos
         circuito_counters = {}
         
-        # Generar 50 votos de ejemplo con distribución realista
-        for i in range(50):
-            # 60% votos en blanco, 30% votos anulados, 10% votos a candidatos ficticios  
+        # Generar 500 votos de ejemplo con distribución realista
+        for i in range(500):
+            # 50% votos a candidatos, 30% en blanco, 20% anulados
             rand = random.random()
-            if rand < 0.6:
+            if rand < 0.5:
+                # Voto a candidato (IDs 1-5 que creamos)
+                candidato_id = random.randint(1, 5)
+                es_anulado = False
+            elif rand < 0.8:
                 candidato_id = None  # Voto en blanco (NULL)
                 es_anulado = False
-            elif rand < 0.9:
+            else:
                 candidato_id = None
                 es_anulado = True  # Voto anulado
-            else:
-                candidato_id = random.randint(1, 3)  # Candidatos ficticios 1-3
-                es_anulado = False
                 
-            circuito_id = random.choice([1, 2, 3, 16, 17, 18, 26, 27, 28])
+            # Debug: Mostrar que circuito se está generando
+            circuito_id = random.randint(1, 35)
+            if i < 10:  # Solo los primeros 10 para debug
+                print(f"DEBUG: Generando voto {i+1} para circuito_id={circuito_id}")
             es_observado = random.random() < 0.05  # 5% de votos observados
             
             # Generar comprobante único para el circuito
@@ -297,12 +329,24 @@ def create_mock_data():
             "INSERT INTO votos (numero_comprobante, candidato_id, circuito_id, es_observado, estado_validacion, es_anulado, timestamp) VALUES (%s, %s, %s, %s, %s, %s, NOW())",
             votos
         )
-        print("✓ Votos de ejemplo creados (principalmente en blanco y anulados)")
+        print("✓ Votos de ejemplo creados (con distribución realista)")
         
-        print("\n🎯 NOTA IMPORTANTE:")
-        print("   - No se crearon elecciones ni candidatos")
-        print("   - Usa la interfaz de Admin para crear elecciones")
-        print("   - Los votos de ejemplo son principalmente en blanco/anulados")
+        # Debug: Verificar votos por circuito
+        cursor.execute("""
+            SELECT c.numero_circuito, COUNT(v.id) as total_votos
+            FROM circuitos c
+            LEFT JOIN votos v ON c.id = v.circuito_id
+            GROUP BY c.id, c.numero_circuito
+            ORDER BY CAST(c.numero_circuito AS UNSIGNED)
+            LIMIT 15
+        """)
+        votos_por_circuito = cursor.fetchall()
+        print(f"🔍 DEBUG: Votos por circuito (primeros 15): {votos_por_circuito}")
+        
+        print("\n🎯 ELECCIÓN 2024 CREADA:")
+        print("   - Elección activa con 5 candidatos presidenciales")
+        print("   - 500 votos distribuidos en TODOS los circuitos (1-35)")
+        print("   - Al crear una nueva elección, los votos se limpiarán automáticamente")
         
         conn.commit()
         print("🎉 Datos mock creados exitosamente!")
@@ -334,8 +378,8 @@ def setup_complete_database():
         conn.commit()
         print("✅ Configuración completa de la base de datos finalizada!")
         print("\n🔑 Credenciales de prueba:")
-        print("Usuario: presidente001, Contraseña: password123")
-        print("Usuario: admin, Contraseña: password123")
+        print("Usuario: presidente1, Contraseña: password123")
+        print("ℹ️  Para crear usuario admin ejecuta: python create_admin_user.py")
         
     except mysql.connector.Error as err:
         print(f"❌ Error: {err}")
@@ -384,8 +428,6 @@ def main():
         if 'estado_validacion' not in voto_columns:
             cursor.execute("ALTER TABLE votos ADD COLUMN estado_validacion VARCHAR(20) DEFAULT 'aprobado'")
             
-        if 'circuito_mesa' not in voto_columns:
-            cursor.execute("ALTER TABLE votos ADD COLUMN circuito_mesa VARCHAR(10) NULL")
         
         # Verificar si las columnas ya existen en autorizaciones
         cursor.execute("DESCRIBE autorizaciones")
@@ -402,8 +444,8 @@ def main():
         conn.commit()
         print("✅ Configuración completa finalizada!")
         print("\n🔑 Credenciales de prueba:")
-        print("Usuario: presidente001, Contraseña: password123")
-        print("Usuario: admin, Contraseña: password123")
+        print("Usuario: presidente1, Contraseña: password123")
+        print("ℹ️  Para crear usuario admin ejecuta: python create_admin_user.py")
         
     except mysql.connector.Error as err:
         print(f"❌ Error: {err}")

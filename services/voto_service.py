@@ -47,9 +47,9 @@ def cast_vote(voto: VotoRequest, current_user: str) -> VotoResponse:
         
         circuito_id = mesa_user['circuito_id']
         
-        # Verificar que el votante esté autorizado
+        # Para votos observados, buscar también con credencial en lugar de credencial_civica
         auth_record = VotanteDAO.get_authorization(connection, voto.credencial)
-        if not auth_record or auth_record['estado'] != 'HABILITADA':
+        if not auth_record or auth_record['estado'] not in ['HABILITADA']:
             raise HTTPException(status_code=403, detail="Votante no autorizado para votar")
         
         # Verificar que no haya votado ya (usando tabla autorizaciones)
