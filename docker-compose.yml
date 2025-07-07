@@ -1,28 +1,10 @@
-services:
-  mysql:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: voting_db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+version: '3.8'
 
+services:
   api:
     build: .
     ports:
       - "8000:8000"
-    depends_on:
-      mysql:
-        condition: service_healthy
     environment:
       - DATABASE_URL=mysql+mysqlconnector://fv_g4_admin:Bd2025!@mysql.reto-ucu.net:50006/FV_Grupo4
       - SECRET_KEY=clavesecreta1
@@ -31,7 +13,3 @@ services:
       - DB_USER=fv_g4_admin
       - DB_PASSWORD=Bd2025!
       - DB_NAME=FV_Grupo4
-
-volumes:
-  mysql_data:
-    driver: local

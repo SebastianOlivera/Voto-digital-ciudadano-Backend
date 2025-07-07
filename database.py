@@ -26,7 +26,7 @@ def init_connection_pool():
     """Inicializar el pool de conexiones"""
     global _connection_pool
     if _connection_pool is None:
-        # Debug: mostrar configuración
+        # mostrar configuración
         print(f"DB_HOST: {os.getenv('DB_HOST', 'localhost')}")
         print(f"DB_PORT: {os.getenv('DB_PORT', '3306')}")
         print(f"DB_USER: {os.getenv('DB_USER', 'user')}")

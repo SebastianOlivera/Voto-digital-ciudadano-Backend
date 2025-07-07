@@ -127,7 +127,7 @@ def create_mock_data():
 def main():
     print("=== CREADOR DE DATOS MOCK ===")
     create_mock_data()
-    print("✅ Proceso completado.")
+    print("Proceso completo.")
 
 if __name__ == "__main__":
     main()

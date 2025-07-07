@@ -35,7 +35,7 @@ def create_usuario(data: CreateUsuarioRequest) -> dict:
             }
             
     except Exception as e:
-        print(f"❌ Error creando usuario: {e}")
+        print(f"Error creando usuario: {e}")
         return {"error": f"Error creando usuario: {str(e)}"}
 
 def create_establecimiento(data: CreateEstablecimientoRequest) -> dict:
@@ -53,7 +53,7 @@ def create_establecimiento(data: CreateEstablecimientoRequest) -> dict:
             }
             
     except Exception as e:
-        print(f"❌ Error creando establecimiento: {e}")
+        print(f"Error creando establecimiento: {e}")
         return {"error": f"Error creando establecimiento: {str(e)}"}
 
 def create_eleccion(data: CreateEleccionRequest) -> dict:
@@ -65,14 +65,13 @@ def create_eleccion(data: CreateEleccionRequest) -> dict:
             success = AdminDAO.create_eleccion(connection, data.dict())
             if success:
                 connection.commit()
-                print(f"✅ FULL WIPE completado - Elección {data.año} creada")
                 return {"mensaje": f"Elección {data.año} creada exitosamente con {len(data.listas)} listas (sistema limpiado completamente)"}
             else:
                 connection.rollback()
                 return {"error": "Error creando la elección"}
             
     except Exception as e:
-        print(f"❌ Error creando elección: {e}")
+        print(f"Error creando elección: {e}")
         return {"error": f"Error creando elección: {str(e)}"}
 
 def create_circuito(data: CreateCircuitoRequest) -> dict:
@@ -103,7 +102,7 @@ def create_circuito(data: CreateCircuitoRequest) -> dict:
             }
             
     except Exception as e:
-        print(f"❌ Error creando circuito: {e}")
+        print(f"Error creando circuito: {e}")
         return {"error": f"Error creando circuito: {str(e)}"}
 
 def get_establecimientos() -> list:
@@ -112,7 +111,7 @@ def get_establecimientos() -> list:
         with get_db_connection() as connection:
             return AdminDAO.get_establecimientos_list(connection)
     except Exception as e:
-        print(f"❌ Error obteniendo establecimientos: {e}")
+        print(f"Error obteniendo establecimientos: {e}")
         return []
 
 def get_circuitos() -> list:
@@ -121,10 +120,9 @@ def get_circuitos() -> list:
         print("🔍 Obteniendo lista de circuitos...")
         with get_db_connection() as connection:
             result = AdminDAO.get_circuitos_list(connection)
-            print(f"✅ Circuitos obtenidos: {len(result)} encontrados")
             return result
     except Exception as e:
-        print(f"❌ Error obteniendo circuitos: {e}")
+        print(f"Error obteniendo circuitos: {e}")
         return []
 
 def create_partido(data: CreatePartidoRequest) -> dict:
@@ -148,5 +146,5 @@ def get_partidos() -> list:
         with get_db_connection() as connection:
             return AdminDAO.get_partidos_list(connection)
     except Exception as e:
-        print(f"❌ Error obteniendo partidos: {e}")
+        print(f"Error obteniendo partidos: {e}")
         return []

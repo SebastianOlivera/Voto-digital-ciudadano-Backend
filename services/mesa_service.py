@@ -20,13 +20,12 @@ def close_circuit(circuito: str) -> dict:
             
             if success:
                 connection.commit()
-                print(f"✅ Circuito {circuito} cerrado exitosamente")
                 return {"mensaje": f"Circuito {circuito} cerrado exitosamente"}
             else:
                 return {"error": f"No se pudo cerrar el circuito {circuito}"}
                 
     except Exception as e:
-        print(f"❌ Error cerrando circuito {circuito}: {e}")
+        print(f"Error cerrando circuito {circuito}: {e}")
         return {"error": f"Error cerrando circuito: {str(e)}"}
 
 def close_mesa(circuito: str) -> dict:
@@ -39,8 +38,7 @@ def get_mesas_estado() -> list:
         print("🔍 Obteniendo estado de mesas...")
         with get_db_connection() as connection:
             result = MesaDAO.get_all_mesas_estado(connection)
-            print(f"✅ Estado de mesas obtenido: {len(result)} mesas encontradas")
             return result
     except Exception as e:
-        print(f"❌ Error en get_mesas_estado: {e}")
+        print(f"Error en get_mesas_estado: {e}")
         return []

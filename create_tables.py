@@ -120,10 +120,10 @@ def create_tables():
                 cursor.execute(sql)
             
             connection.commit()
-            print("✅ Todas las tablas creadas exitosamente")
+            print("Todas las tablas creadas exitosamente")
             
     except Exception as e:
-        print(f"❌ Error creando tablas: {e}")
+        print(f"Error creando tablas: {e}")
 
 if __name__ == "__main__":
     create_tables()

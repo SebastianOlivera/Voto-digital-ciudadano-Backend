@@ -34,11 +34,9 @@ def create_admin_user():
             """, ("admin", password_hash, True, "superadmin"))
 
         connection.commit()
-        print("✅ Usuario administrador creado/actualizado exitosamente!")
-        print("\n🔑 Credenciales del administrador:")
+        print("Usuario administrador creado")
         print("Usuario: admin")
         print("Contraseña: admin123")
-        print("Rol: superadmin")
 
 if __name__ == "__main__":
     create_admin_user()

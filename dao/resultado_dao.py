@@ -13,10 +13,7 @@ class ResultadoDAO:
             cursor.execute("SELECT id FROM elecciones WHERE activa = TRUE LIMIT 1")
             eleccion_activa = cursor.fetchone()
             
-            print(f"🔍 DEBUG: Elección activa encontrada: {eleccion_activa}")
-            
             if not eleccion_activa:
-                print("❌ DEBUG: No hay elección activa")
                 return []
             
             if departamento:
@@ -45,7 +42,6 @@ class ResultadoDAO:
                 cursor.execute(query, (eleccion_activa['id'],))
             
             resultados = cursor.fetchall()
-            print(f"📊 DEBUG: Resultados obtenidos: {resultados}")
             return resultados
         finally:
             cursor.close()
@@ -348,7 +344,6 @@ class ResultadoDAO:
     @staticmethod
     def search_circuits(connection: mysql.connector.MySQLConnection, search_term: str) -> List[Dict]:
         """Buscar circuitos por número"""
-        print(f"🔍 DEBUG: Buscando circuitos con término: '{search_term}'")
         cursor = connection.cursor(dictionary=True)
         try:
             # Si el término es "ALL", mostrar todos los circuitos disponibles
@@ -361,21 +356,16 @@ class ResultadoDAO:
                 """
                 cursor.execute(query)
                 resultados = cursor.fetchall()
-                print(f"🔍 DEBUG: TODOS los circuitos disponibles ({len(resultados)}): {resultados}")
                 return resultados
             
-            # Información de debug
             test_query = "SELECT COUNT(*) as total FROM circuitos"
             cursor.execute(test_query)
             total_circuits = cursor.fetchone()
-            print(f"🔍 DEBUG: Total circuitos en BD: {total_circuits}")
             
-            # Mostrar TODOS los números disponibles para debug
             all_query = "SELECT numero_circuito FROM circuitos ORDER BY CAST(numero_circuito AS UNSIGNED)"
             cursor.execute(all_query)
             all_numbers = cursor.fetchall()
             números_disponibles = [item['numero_circuito'] for item in all_numbers]
-            print(f"🔍 DEBUG: TODOS los números disponibles: {números_disponibles}")
             
             query = """
             SELECT c.numero_circuito, e.nombre as establecimiento, e.departamento
@@ -386,13 +376,11 @@ class ResultadoDAO:
             LIMIT 10
             """
             search_pattern = f"%{search_term}%"
-            print(f"🔍 DEBUG: Patrón de búsqueda: '{search_pattern}'")
             cursor.execute(query, (search_pattern,))
             resultados = cursor.fetchall()
-            print(f"🔍 DEBUG: Resultados encontrados: {len(resultados)} - {resultados}")
             return resultados
         except Exception as e:
-            print(f"❌ ERROR en búsqueda de circuitos: {e}")
+            print(f"ERROR en búsqueda de circuitos: {e}")
             return []
         finally:
             cursor.close()
